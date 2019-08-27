@@ -1,4 +1,4 @@
-PKG_NAME=terraform-plugin-sqlserver
+PKG_NAME=terraform-provider-sqlserver
 
 default: build
 

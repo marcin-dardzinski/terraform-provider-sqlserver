@@ -14,4 +14,8 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
-terraform-plugin-sqlserver
+.terraform
+terraform.tfstate
+terraform.tfstate.backup
+
+terraform-provider-sqlserver

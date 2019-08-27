@@ -6,6 +6,16 @@ import (
 
 func Provider() *schema.Provider {
 	return &schema.Provider{
-		ResourcesMap: map[string]*schema.Resource{},
+		ResourcesMap: map[string]*schema.Resource{
+			"sqlserver_user": resourceUser(),
+		},
+		Schema:        configSchema(),
+		ConfigureFunc: createSqlClientProvider,
 	}
+}
+
+func createSqlClientProvider(data *schema.ResourceData) (interface{}, error) {
+	connString := data.Get("connection_string").(string)
+	provider := sqlClientProvider{connString: connString}
+	return &provider, nil
 }
