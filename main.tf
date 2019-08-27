@@ -3,7 +3,7 @@ provider "sqlserver" {
 }
 
 resource "sqlserver_user" "main" {
-  name     = "foo2"
+  name     = "foo5"
   password = "Passwd1!"
 }
 

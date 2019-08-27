@@ -44,13 +44,12 @@ func (client *sqlUserClient) Close() error {
 }
 
 func (client *sqlUserClient) Exists(name string) (bool, error) {
-	// return false, nil
 	row, err := client.conn.Query(`
 		SELECT TOP 1 1
 		FROM sys.database_principals
 		WHERE type NOT IN ('A', 'G', 'R', 'X')
 			AND sid IS NOT NULL
-			AND name = @name`, sql.Named("name", name))
+			AND name = :name`, sql.Named("name", name))
 
 	if err != nil {
 		return false, err
@@ -62,13 +61,15 @@ func (client *sqlUserClient) Exists(name string) (bool, error) {
 }
 
 func (client *sqlUserClient) Create(name, password string) error {
-	// _, err := client.conn.Exec(
-	// 	`EXEC( 'CREATE USER ' + QUOTENAME(@user) + ' WITH PASSWORD = ' @password )`,
-	// 	sql.Named("user", name),
-	// 	sql.Named("password", password))
-	// return err
-	_, err := client.conn.Exec(`CREATE USER foo2 WITH PASSWORD = 'Passwd1!'`)
+	_, err := client.conn.Exec(
+		`
+		DECLARE @Sql NVARCHAR(MAX) = 'CREATE USER ' + QUOTENAME(:user) + ' WITH PASSWORD = '''  + :password + ''''; 
+		EXEC(@Sql)`,
+		sql.Named("user", name),
+		sql.Named("password", password))
 	return err
+	// _, err := client.conn.Exec(`CREATE USER foo2 WITH PASSWORD = 'Passwd1!'`)
+	// return err
 }
 
 func (client *sqlUserClient) Delete(name string) error {

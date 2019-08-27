@@ -2,7 +2,8 @@ PKG_NAME=terraform-provider-sqlserver
 
 default: build
 
-install: 
+init: build
+	terraform init
 
 build:
 	go build -o ${PKG_NAME}
