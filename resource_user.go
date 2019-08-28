@@ -26,17 +26,12 @@ func resourceUser() *schema.Resource {
 }
 
 func resourceUserCreate(d *schema.ResourceData, m interface{}) error {
-	clientProvider := m.(SqlClientProvider)
-	client, err := clientProvider.GetClient()
-	if err != nil {
-		return err
-	}
-	defer client.Close()
+	client := m.(SqlUserClient)
 
 	name := d.Get("name").(string)
 	password := d.Get("password").(string)
 
-	err = client.Create(name, password)
+	err := client.Create(name, password)
 	if err != nil {
 		return err
 	}
@@ -54,5 +49,8 @@ func resourceUserUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceUserDelete(d *schema.ResourceData, m interface{}) error {
-	return nil
+	client := m.(SqlUserClient)
+	name := d.Get("name").(string)
+
+	return client.Delete(name)
 }

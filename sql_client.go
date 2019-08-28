@@ -6,8 +6,13 @@ import (
 	_ "github.com/denisenkom/go-mssqldb"
 )
 
-type SqlClientProvider interface {
-	GetClient() (SqlUserClient, error)
+func CreateSqlClient(connString string) (SqlUserClient, error) {
+	conn, err := sql.Open("mssql", connString)
+	if err != nil {
+		return nil, err
+	}
+
+	return &sqlUserClient{conn: conn}, nil
 }
 
 type SqlUserClient interface {
@@ -18,25 +23,8 @@ type SqlUserClient interface {
 	Close() error
 }
 
-type sqlClientProvider struct {
-	connString string
-}
-
 type sqlUserClient struct {
 	conn *sql.DB
-}
-
-func (provider *sqlClientProvider) GetClient() (SqlUserClient, error) {
-	conn, err := sql.Open("mssql", provider.connString)
-	if err != nil {
-		return nil, err
-	}
-
-	client := sqlUserClient{
-		conn: conn,
-	}
-
-	return &client, nil
 }
 
 func (client *sqlUserClient) Close() error {
@@ -61,18 +49,18 @@ func (client *sqlUserClient) Exists(name string) (bool, error) {
 }
 
 func (client *sqlUserClient) Create(name, password string) error {
-	_, err := client.conn.Exec(
-		`
+	_, err := client.conn.Exec(`
 		DECLARE @Sql NVARCHAR(MAX) = 'CREATE USER ' + QUOTENAME(:user) + ' WITH PASSWORD = '''  + :password + ''''; 
 		EXEC(@Sql)`,
 		sql.Named("user", name),
 		sql.Named("password", password))
 	return err
-	// _, err := client.conn.Exec(`CREATE USER foo2 WITH PASSWORD = 'Passwd1!'`)
-	// return err
 }
 
 func (client *sqlUserClient) Delete(name string) error {
-	_, err := client.conn.Exec(`EXEC( 'DELETE USER ' + QUOTENAME(@user))`, sql.Named("user", name))
+	_, err := client.conn.Exec(`
+		DECLARE @Sql NVARCHAR(MAX) = 'DROP USER ' + QUOTENAME(:user);
+		EXEC(@Sql)`,
+		sql.Named("user", name))
 	return err
 }

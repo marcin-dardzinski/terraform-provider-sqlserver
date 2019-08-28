@@ -1,6 +1,12 @@
 PKG_NAME=terraform-provider-sqlserver
 
-default: build
+default: init
+
+apply: init
+	terraform apply
+
+destroy: init
+	terraform destroy
 
 init: build
 	terraform init
