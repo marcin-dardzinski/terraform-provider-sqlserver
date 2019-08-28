@@ -22,6 +22,13 @@ func resourceUser() *schema.Resource {
 				Required:  true,
 				Sensitive: true,
 			},
+			"roles": &schema.Schema{
+				Type:     schema.TypeSet,
+				Required: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 		},
 	}
 }
@@ -31,8 +38,9 @@ func resourceUserCreate(d *schema.ResourceData, m interface{}) error {
 
 	name := d.Get("name").(string)
 	password := d.Get("password").(string)
+	roles := d.Get("roles").(*schema.Set)
 
-	err := client.Create(name, password)
+	err := client.Create(name, password, castStrings(roles))
 	if err != nil {
 		return err
 	}
@@ -54,10 +62,15 @@ func resourceUserRead(d *schema.ResourceData, m interface{}) error {
 		return nil
 	}
 
+	roles := schema.NewSet(schema.HashString, []interface{}{})
+	for _, role := range user.roles {
+		roles.Add(role)
+	}
+
 	d.Set("name", user.name)
+	d.Set("roles", &roles)
 
 	return nil
-
 }
 
 func resourceUserUpdate(d *schema.ResourceData, m interface{}) error {
@@ -67,7 +80,11 @@ func resourceUserUpdate(d *schema.ResourceData, m interface{}) error {
 	d.Partial(true)
 
 	if err := tryChangePassword(d, client, name); err != nil {
-		return nil
+		return err
+	}
+
+	if err := tryChangeRoles(d, client, name); err != nil {
+		return err
 	}
 
 	d.Partial(false)
@@ -92,4 +109,32 @@ func tryChangePassword(d *schema.ResourceData, client SqlUserClient, name string
 		d.SetPartial("password")
 	}
 	return nil
+}
+
+func tryChangeRoles(d *schema.ResourceData, client SqlUserClient, name string) error {
+	if d.HasChange("roles") {
+		oldRaw, newRaw := d.GetChange("roles")
+		old, new := oldRaw.(*schema.Set), newRaw.(*schema.Set)
+
+		grant := new.Difference(old)
+		revoke := old.Difference(new)
+
+		if err := client.ChangeRoles(name, castStrings(grant), castStrings(revoke)); err != nil {
+			return err
+		}
+
+		d.SetPartial("roles")
+	}
+
+	return nil
+}
+
+func castStrings(set *schema.Set) []string {
+	raw := set.List()
+	result := make([]string, set.Len())
+	for i := range raw {
+		result[i] = raw[i].(string)
+	}
+
+	return result
 }
