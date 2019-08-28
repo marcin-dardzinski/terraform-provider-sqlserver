@@ -3,8 +3,8 @@ provider "sqlserver" {
 }
 
 resource "sqlserver_user" "main" {
-  name     = "foo5"
-  password = "Passwd1!"
+  name     = "foo55"
+  password = "Passwd1!2"
 }
 
 # Server=localhost;Database=Db1;User Id=sa;Password=Passwd1!;
