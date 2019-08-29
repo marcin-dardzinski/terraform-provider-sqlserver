@@ -16,5 +16,10 @@ func Provider() *schema.Provider {
 
 func createSqlClientProvider(data *schema.ResourceData) (interface{}, error) {
 	connString := data.Get("connection_string").(string)
-	return GetSqlClient(connString)
+	dbId := ""
+	if tmp := data.Get("database_id"); tmp != nil {
+		dbId = tmp.(string)
+	}
+
+	return GetSqlClient(connString, dbId)
 }

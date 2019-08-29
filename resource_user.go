@@ -44,7 +44,7 @@ func resourceUserCreate(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return err
 	}
-	d.SetId(name)
+	d.SetId(client.DatabaseId() + "/" + name)
 
 	return resourceUserRead(d, m)
 }

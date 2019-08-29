@@ -5,7 +5,7 @@ import "sync"
 var pool = map[string]SqlUserClient{}
 var lock sync.Mutex
 
-func GetSqlClient(connString string) (SqlUserClient, error) {
+func GetSqlClient(connString, dbId string) (SqlUserClient, error) {
 	lock.Lock()
 	defer lock.Unlock()
 
@@ -13,7 +13,7 @@ func GetSqlClient(connString string) (SqlUserClient, error) {
 		return conn, nil
 	}
 
-	conn, err := CreateSqlClient(connString)
+	conn, err := CreateSqlClient(connString, dbId)
 	if err != nil {
 		return nil, err
 	}

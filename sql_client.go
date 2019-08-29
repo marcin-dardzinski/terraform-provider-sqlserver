@@ -8,16 +8,45 @@ import (
 	_ "github.com/denisenkom/go-mssqldb"
 )
 
-func CreateSqlClient(connString string) (SqlUserClient, error) {
+func CreateSqlClient(connString, dbId string) (SqlUserClient, error) {
 	conn, err := sql.Open("mssql", connString)
 	if err != nil {
 		return nil, err
 	}
 
-	return &sqlUserClient{conn: conn}, nil
+	if dbId == "" {
+		dbId = parseDatabaseId(connString)
+	}
+
+	return &sqlUserClient{conn: conn, dbId: dbId}, nil
+}
+
+func parseDatabaseId(connString string) string {
+	server, db := "", ""
+
+	split := strings.Split(connString, ";")
+
+	for _, entries := range split {
+		raw := strings.SplitN(entries, "=", 2)
+		if len(raw) < 2 {
+			continue
+		}
+
+		key, value := raw[0], raw[1]
+
+		if key == "Server" {
+			server = value
+		} else if key == "Database" {
+			db = value
+		}
+	}
+
+	return server + "/" + db
 }
 
 type SqlUserClient interface {
+	DatabaseId() string
+
 	Get(name string) (*SqlUser, error)
 	Create(name, password string, roles []string) error
 	ChangePassword(name, password string) error
@@ -34,10 +63,11 @@ type SqlUser struct {
 
 type sqlUserClient struct {
 	conn *sql.DB
+	dbId string
 }
 
-func (client *sqlUserClient) Close() error {
-	return client.conn.Close()
+func (client *sqlUserClient) DatabaseId() string {
+	return client.dbId
 }
 
 func (client *sqlUserClient) Get(name string) (*SqlUser, error) {
@@ -121,4 +151,8 @@ func (client *sqlUserClient) Delete(name string) error {
 		EXEC(@Sql)`,
 		sql.Named("user", name))
 	return err
+}
+
+func (client *sqlUserClient) Close() error {
+	return client.conn.Close()
 }
