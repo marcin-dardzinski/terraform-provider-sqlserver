@@ -11,4 +11,6 @@ func main() {
 			return Provider()
 		},
 	})
+
+	DisposeConnections()
 }
