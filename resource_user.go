@@ -62,13 +62,15 @@ func resourceUserRead(d *schema.ResourceData, m interface{}) error {
 		return nil
 	}
 
-	roles := schema.NewSet(schema.HashString, []interface{}{})
-	for _, role := range user.roles {
-		roles.Add(role)
+	desiredRoles := d.Get("roles").(*schema.Set)
+	roles := schema.NewSet(desiredRoles.F, []interface{}{})
+	for _, r := range user.roles {
+		roles.Add(r)
 	}
+	knownRoles := desiredRoles.Intersection(roles)
 
 	d.Set("name", user.name)
-	d.Set("roles", &roles)
+	d.Set("roles", knownRoles)
 
 	return nil
 }

@@ -8,7 +8,8 @@ resource "sqlserver_user" "foo55" {
   password = "Passwd1!2"
   roles = [
     "db_datareader",
-    "db_datawriter"
+    "db_datawriter",
+    "db_ddladmin"
   ]
 }
 

@@ -5,6 +5,9 @@ default: init
 apply: init
 	terraform apply
 
+plan: init
+	terraform plan
+
 destroy: init
 	terraform destroy
 
