@@ -1,15 +1,18 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
 func resourceUser() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceUserCreate,
-		Read:   resourceUserRead,
-		Update: resourceUserUpdate,
-		Delete: resourceUserDelete,
+		Create:   resourceUserCreate,
+		Read:     resourceUserRead,
+		Update:   resourceUserUpdate,
+		Delete:   resourceUserDelete,
+		Importer: &schema.ResourceImporter{State: resourceUserImport},
 
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{
@@ -101,6 +104,32 @@ func resourceUserDelete(d *schema.ResourceData, m interface{}) error {
 	return client.Delete(name)
 }
 
+func resourceUserImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	client := m.(SqlUserClient)
+	name := getUserNameFromId(d.Id())
+
+	user, err := client.Get(name)
+	if err != nil {
+		return []*schema.ResourceData{}, err
+	}
+
+	if user == nil {
+		d.SetId("")
+		return []*schema.ResourceData{}, nil
+	}
+
+	d.SetId(client.DatabaseId() + "/" + name)
+	d.Set("name", user.name)
+	roles := schema.NewSet(schema.HashString, []interface{}{})
+	for _, role := range user.roles {
+		roles.Add(role)
+	}
+
+	d.Set("roles", roles)
+
+	return []*schema.ResourceData{d}, nil
+}
+
 func tryChangePassword(d *schema.ResourceData, client SqlUserClient, name string) error {
 	if d.HasChange("password") {
 		_, new := d.GetChange("password")
@@ -139,4 +168,9 @@ func castStrings(set *schema.Set) []string {
 	}
 
 	return result
+}
+
+func getUserNameFromId(id string) string {
+	s := strings.Split(id, "/")
+	return s[len(s)-1]
 }
