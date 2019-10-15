@@ -11,10 +11,5 @@ func configSchema() map[string]*schema.Schema {
 			Required:  true,
 			Sensitive: true,
 		},
-		"database_id": &schema.Schema{
-			Type:        schema.TypeString,
-			Optional:    true,
-			Description: "Id of the database to be prepended to resources' ids.\nIf not set <server_address>/<database_name> will be used",
-		},
 	}
 }

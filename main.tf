@@ -1,6 +1,5 @@
 provider "sqlserver" {
   connection_string = "Server=localhost;Database=Db1;User Id=sa;Password=Passwd1!;"
-  database_id       = "my-awesome-db-id"
 }
 
 resource "sqlserver_user" "foo55" {

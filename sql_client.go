@@ -8,15 +8,13 @@ import (
 	_ "github.com/denisenkom/go-mssqldb"
 )
 
-func CreateSqlClient(connString, dbId string) (SqlUserClient, error) {
+func CreateSqlClient(connString string) (SqlUserClient, error) {
 	conn, err := sql.Open("mssql", connString)
 	if err != nil {
 		return nil, err
 	}
 
-	if dbId == "" {
-		dbId = parseDatabaseId(connString)
-	}
+	dbId := parseDatabaseId(connString)
 
 	return &sqlUserClient{conn: conn, dbId: dbId}, nil
 }
