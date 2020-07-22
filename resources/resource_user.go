@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/marcin-dardzinski/sql-server-terraform/sql"
+	"github.com/marcin-dardzinski/terraform-provider-sqlserver/sql"
 )
 
 func ResourceUser() *schema.Resource {

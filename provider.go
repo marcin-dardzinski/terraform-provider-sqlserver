@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/marcin-dardzinski/sql-server-terraform/resources"
-	"github.com/marcin-dardzinski/sql-server-terraform/sql"
+	"github.com/marcin-dardzinski/terraform-provider-sqlserver/resources"
+	"github.com/marcin-dardzinski/terraform-provider-sqlserver/sql"
 )
 
 func Provider() *schema.Provider {

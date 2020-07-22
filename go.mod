@@ -1,4 +1,4 @@
-module github.com/marcin-dardzinski/sql-server-terraform
+module github.com/marcin-dardzinski/terraform-provider-sqlserver
 
 go 1.14
 
