@@ -9,6 +9,9 @@ func Provider() *schema.Provider {
 		ResourcesMap: map[string]*schema.Resource{
 			"sqlserver_user": resourceUser(),
 		},
+		DataSourcesMap: map[string]*schema.Resource{
+			"sqlserver_connection_string": dataConnectionString(),
+		},
 		Schema:        configSchema(),
 		ConfigureFunc: createSqlClientProvider,
 	}
