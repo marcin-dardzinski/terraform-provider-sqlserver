@@ -15,17 +15,17 @@ func resourceUser() *schema.Resource {
 		Importer: &schema.ResourceImporter{State: resourceUserImport},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"password": &schema.Schema{
+			"password": {
 				Type:      schema.TypeString,
 				Required:  true,
 				Sensitive: true,
 			},
-			"roles": &schema.Schema{
+			"roles": {
 				Type:     schema.TypeSet,
 				Required: true,
 				Elem: &schema.Schema{

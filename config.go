@@ -6,7 +6,7 @@ import (
 
 func configSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
-		"connection_string": &schema.Schema{
+		"connection_string": {
 			Type:      schema.TypeString,
 			Required:  true,
 			Sensitive: true,
