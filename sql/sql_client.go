@@ -1,4 +1,4 @@
-package main
+package sql
 
 import (
 	"database/sql"
@@ -55,8 +55,8 @@ type SqlUserClient interface {
 }
 
 type SqlUser struct {
-	name  string
-	roles []string
+	Name  string
+	Roles []string
 }
 
 type sqlUserClient struct {
@@ -106,7 +106,7 @@ func (client *sqlUserClient) Get(name string) (*SqlUser, error) {
 		return nil, err
 	}
 
-	user := SqlUser{name: name, roles: roles}
+	user := SqlUser{Name: name, Roles: roles}
 	return &user, nil
 }
 

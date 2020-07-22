@@ -1,8 +1,11 @@
-package main
+package resources
 
-import "github.com/hashicorp/terraform/helper/schema"
+import (
+	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/marcin-dardzinski/sql-server-terraform/sql"
+)
 
-func extractConnString(d *schema.ResourceData) ConnectionString {
+func ExtractConnString(d *schema.ResourceData) sql.ConnectionString {
 	server := d.Get("server").(string)
 	port := d.Get("port").(int)
 	database := d.Get("database").(string)
@@ -14,7 +17,7 @@ func extractConnString(d *schema.ResourceData) ConnectionString {
 	persistSecurityInfo := d.Get("persist_security_info").(bool)
 	encrypt := d.Get("encrypt").(bool)
 
-	return ConnectionString{
+	return sql.ConnectionString{
 		ServerAddress:          server,
 		Port:                   port,
 		Database:               database,

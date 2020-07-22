@@ -1,12 +1,13 @@
-package main
+package resources
 
 import (
 	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/marcin-dardzinski/sql-server-terraform/sql"
 )
 
-func resourceUser() *schema.Resource {
+func ResourceUser() *schema.Resource {
 	return &schema.Resource{
 		Create:   resourceUserCreate,
 		Read:     resourceUserRead,
@@ -37,7 +38,7 @@ func resourceUser() *schema.Resource {
 }
 
 func resourceUserCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(SqlUserClient)
+	client := m.(sql.SqlUserClient)
 
 	name := d.Get("name").(string)
 	password := d.Get("password").(string)
@@ -53,7 +54,7 @@ func resourceUserCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceUserRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(SqlUserClient)
+	client := m.(sql.SqlUserClient)
 
 	user, err := client.Get(d.Get("name").(string))
 	if err != nil {
@@ -67,19 +68,24 @@ func resourceUserRead(d *schema.ResourceData, m interface{}) error {
 
 	desiredRoles := d.Get("roles").(*schema.Set)
 	roles := schema.NewSet(desiredRoles.F, []interface{}{})
-	for _, r := range user.roles {
+	for _, r := range user.Roles {
 		roles.Add(r)
 	}
 	knownRoles := desiredRoles.Intersection(roles)
 
-	d.Set("name", user.name)
-	d.Set("roles", knownRoles)
+	if err = d.Set("name", user.Name); err != nil {
+		return err
+	}
+
+	if err = d.Set("roles", knownRoles); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 func resourceUserUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(SqlUserClient)
+	client := m.(sql.SqlUserClient)
 	name := d.Get("name").(string)
 
 	d.Partial(true)
@@ -98,14 +104,14 @@ func resourceUserUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceUserDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(SqlUserClient)
+	client := m.(sql.SqlUserClient)
 	name := d.Get("name").(string)
 
 	return client.Delete(name)
 }
 
 func resourceUserImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(SqlUserClient)
+	client := m.(sql.SqlUserClient)
 	name := getUserNameFromId(d.Id())
 
 	user, err := client.Get(name)
@@ -119,18 +125,24 @@ func resourceUserImport(d *schema.ResourceData, m interface{}) ([]*schema.Resour
 	}
 
 	d.SetId(client.DatabaseId() + "/" + name)
-	d.Set("name", user.name)
+
+	if err = d.Set("name", user.Name); err != nil {
+		return []*schema.ResourceData{}, err
+	}
+
 	roles := schema.NewSet(schema.HashString, []interface{}{})
-	for _, role := range user.roles {
+	for _, role := range user.Roles {
 		roles.Add(role)
 	}
 
-	d.Set("roles", roles)
+	if err = d.Set("roles", roles); err != nil {
+		return []*schema.ResourceData{}, err
+	}
 
 	return []*schema.ResourceData{d}, nil
 }
 
-func tryChangePassword(d *schema.ResourceData, client SqlUserClient, name string) error {
+func tryChangePassword(d *schema.ResourceData, client sql.SqlUserClient, name string) error {
 	if d.HasChange("password") {
 		_, new := d.GetChange("password")
 		if err := client.ChangePassword(name, new.(string)); err != nil {
@@ -142,7 +154,7 @@ func tryChangePassword(d *schema.ResourceData, client SqlUserClient, name string
 	return nil
 }
 
-func tryChangeRoles(d *schema.ResourceData, client SqlUserClient, name string) error {
+func tryChangeRoles(d *schema.ResourceData, client sql.SqlUserClient, name string) error {
 	if d.HasChange("roles") {
 		oldRaw, newRaw := d.GetChange("roles")
 		old, new := oldRaw.(*schema.Set), newRaw.(*schema.Set)

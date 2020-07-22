@@ -2,15 +2,17 @@ package main
 
 import (
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/marcin-dardzinski/sql-server-terraform/resources"
+	"github.com/marcin-dardzinski/sql-server-terraform/sql"
 )
 
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{
-			"sqlserver_user": resourceUser(),
+			"sqlserver_user": resources.ResourceUser(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"sqlserver_connection_string": dataConnectionString(),
+			"sqlserver_connection_string": resources.DataConnectionString(),
 		},
 		Schema:        configSchema(),
 		ConfigureFunc: createSqlClientProvider,
@@ -21,7 +23,7 @@ func createSqlClientProvider(data *schema.ResourceData) (interface{}, error) {
 	connString := data.Get("connection_string").(string)
 
 	if connString == "" {
-		x := extractConnString(data)
+		x := resources.ExtractConnString(data)
 		var err error
 		connString, err = x.String()
 
@@ -30,5 +32,5 @@ func createSqlClientProvider(data *schema.ResourceData) (interface{}, error) {
 		}
 	}
 
-	return CreateSqlClient(connString)
+	return sql.CreateSqlClient(connString)
 }

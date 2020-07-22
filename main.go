@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/hashicorp/terraform/plugin"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/marcin-dardzinski/sql-server-terraform/sql"
 )
 
 func main() {
@@ -12,5 +13,5 @@ func main() {
 		},
 	})
 
-	DisposeConnections()
+	sql.DisposeConnections()
 }

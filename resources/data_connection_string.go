@@ -1,4 +1,4 @@
-package main
+package resources
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-func dataConnectionString() *schema.Resource {
+func DataConnectionString() *schema.Resource {
 	return &schema.Resource{
 		Read: dataConnectionStringRead,
 		Schema: map[string]*schema.Schema{
@@ -67,8 +67,7 @@ func dataConnectionString() *schema.Resource {
 }
 
 func dataConnectionStringRead(d *schema.ResourceData, m interface{}) error {
-	conn := extractConnString(d)
-
+	conn := ExtractConnString(d)
 	connString, err := conn.String()
 	if err != nil {
 		return err
@@ -76,7 +75,9 @@ func dataConnectionStringRead(d *schema.ResourceData, m interface{}) error {
 
 	id := fmt.Sprintf("%s/%d/%s/%s", conn.ServerAddress, conn.Port, conn.Database, conn.Username)
 	d.SetId(id)
-	d.Set("value", connString)
+	if err = d.Set("value", connString); err != nil {
+		return err
+	}
 
 	return nil
 }
