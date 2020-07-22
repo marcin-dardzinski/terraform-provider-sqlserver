@@ -19,5 +19,16 @@ func Provider() *schema.Provider {
 
 func createSqlClientProvider(data *schema.ResourceData) (interface{}, error) {
 	connString := data.Get("connection_string").(string)
-	return GetSqlClient(connString)
+
+	if connString == "" {
+		x := extractConnString(data)
+		var err error
+		connString, err = x.String()
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return CreateSqlClient(connString)
 }
