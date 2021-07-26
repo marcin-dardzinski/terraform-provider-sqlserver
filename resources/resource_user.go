@@ -3,7 +3,7 @@ package resources
 import (
 	"strings"
 
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/marcin-dardzinski/terraform-provider-sqlserver/sql"
 )
 
@@ -149,7 +149,8 @@ func tryChangePassword(d *schema.ResourceData, client sql.SqlUserClient, name st
 			return err
 		}
 
-		d.SetPartial("password")
+		// TODO: Check if needed
+		// d.SetPartial("password")
 	}
 	return nil
 }
@@ -166,7 +167,8 @@ func tryChangeRoles(d *schema.ResourceData, client sql.SqlUserClient, name strin
 			return err
 		}
 
-		d.SetPartial("roles")
+		// TODO: check if needed
+		// d.SetPartial("roles")
 	}
 
 	return nil
