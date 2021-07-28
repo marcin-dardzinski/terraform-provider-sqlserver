@@ -1,4 +1,5 @@
 PKG_NAME=terraform-provider-sqlserver
+VERSION=1.0.0
 
 default: init
 
@@ -12,7 +13,8 @@ destroy: init
 	terraform destroy
 
 init: build
+	rm .terraform.lock.hcl
 	terraform init
 
 build:
-	go build -o ${PKG_NAME}
+	go build -o "terraform.d/plugins/local/local/sqlserver/${VERSION}/linux_amd64/${PKG_NAME}"

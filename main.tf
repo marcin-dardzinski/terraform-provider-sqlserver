@@ -1,9 +1,18 @@
+terraform {
+  required_providers {
+    sqlserver = {
+      source  = "local/local/sqlserver"
+      version = "1.0.0"
+    }
+  }
+}
+
 provider "sqlserver" {
   # connection_string = "Server=localhost;Port=1433;Database=Db1;User Id=sa;Password=Passwd1!;"
-  server   = "localhost"
-  database = "Db1"
-  username = "sa"
-  password = "Passwd1!"
+  server   = "tf-2137.database.windows.net"
+  database = "tf-2137"
+  # username = "sa"
+  # password = "Passwd1!"
 }
 
 resource "sqlserver_user" "foo55" {
