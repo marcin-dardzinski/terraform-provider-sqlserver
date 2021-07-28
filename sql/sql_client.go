@@ -3,43 +3,70 @@ package sql
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 
-	_ "github.com/denisenkom/go-mssqldb"
+	"github.com/Azure/go-autorest/autorest/azure/cli"
+	mssql "github.com/denisenkom/go-mssqldb"
 )
 
-func CreateSqlClient(connString string) (SqlUserClient, error) {
-	conn, err := sql.Open("mssql", connString)
+func CreateSqlClient(connString *ConnectionString) (SqlUserClient, error) {
+
+	var err error
+	var db *sql.DB
+
+	if connString.Username != "" {
+		db, err = createUsingPasswordAuth(connString)
+	} else {
+		db, err = createUsingAzureActiveDirectoryAuth(connString)
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
 	dbId := parseDatabaseId(connString)
 
-	return &sqlUserClient{conn: conn, dbId: dbId}, nil
+	return &sqlUserClient{conn: db, dbId: dbId}, nil
 }
 
-func parseDatabaseId(connString string) string {
-	server, db := "", ""
-
-	split := strings.Split(connString, ";")
-
-	for _, entries := range split {
-		raw := strings.SplitN(entries, "=", 2)
-		if len(raw) < 2 {
-			continue
-		}
-
-		key, value := raw[0], raw[1]
-
-		if key == "Server" {
-			server = value
-		} else if key == "Database" {
-			db = value
-		}
+func createUsingPasswordAuth(connString *ConnectionString) (*sql.DB, error) {
+	str, err := connString.String()
+	if err != nil {
+		return nil, err
 	}
 
-	return server + "/" + db
+	return sql.Open("mssql", str)
+}
+
+func createUsingAzureActiveDirectoryAuth(connString *ConnectionString) (*sql.DB, error) {
+	str, err := connString.String()
+	if err != nil {
+		return nil, err
+	}
+
+	log.Println("[DEBUG] Using connection string ", str, " dupa")
+
+	connector, err := mssql.NewAccessTokenConnector(str, func() (string, error) {
+		token, err := cli.GetTokenFromCLI("https://database.windows.net/")
+		if err != nil {
+			return "", err
+		}
+
+		log.Println("[DEBUG] Access token %s", token.AccessToken)
+
+		return token.AccessToken, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return sql.OpenDB(connector), nil
+}
+
+func parseDatabaseId(connString *ConnectionString) string {
+	return connString.ServerAddress + "/" + connString.Database
 }
 
 type SqlUserClient interface {
@@ -73,7 +100,7 @@ func (client *sqlUserClient) Get(name string) (*SqlUser, error) {
 		SELECT u.name, r.name FROM sys.database_principals u
 		LEFT JOIN sys.database_role_members m on u.principal_id = m.member_principal_id
 		LEFT JOIN sys.database_principals r on r.principal_id = m.role_principal_id
-		WHERE u.name = :name`,
+		WHERE u.name = @name`,
 		sql.Named("name", name))
 
 	if err != nil {
@@ -123,8 +150,8 @@ func (client *sqlUserClient) Create(name, password string, roles []string) error
 
 func (client *sqlUserClient) ChangePassword(name, password string) error {
 	_, err := client.conn.Exec(`
-		DECLARE @Sql NVARCHAR(MAX) = 'ALTER USER ' + QUOTENAME(:user) + ' WITH PASSWORD = '''  + :password + ''''; 
-		EXEC(@Sql)`,
+		EXEC('ALTER USER ' + QUOTENAME(@user) + ' WITH PASSWORD = '''  + @password + ''''); 
+		`,
 		sql.Named("user", name),
 		sql.Named("password", password))
 	return err
@@ -145,8 +172,8 @@ func (client *sqlUserClient) ChangeRoles(name string, grant, revoke []string) er
 
 func (client *sqlUserClient) Delete(name string) error {
 	_, err := client.conn.Exec(`
-		DECLARE @Sql NVARCHAR(MAX) = 'DROP USER ' + QUOTENAME(:user);
-		EXEC(@Sql)`,
+		EXEC('DROP USER ' + QUOTENAME(@user));
+		`,
 		sql.Named("user", name))
 	return err
 }

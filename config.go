@@ -75,5 +75,9 @@ func configSchema() map[string]*schema.Schema {
 			Optional:    true,
 			DefaultFunc: schema.EnvDefaultFunc("SQLSERVER_ENCRYPT", true),
 		},
+		"azure": {
+			Type:     schema.TypeMap,
+			Optional: true,
+		},
 	}
 }

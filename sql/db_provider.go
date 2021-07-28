@@ -2,10 +2,10 @@ package sql
 
 import "sync"
 
-var pool = map[string]SqlUserClient{}
+var pool = map[*ConnectionString]SqlUserClient{}
 var lock sync.Mutex
 
-func GetSqlClient(connString string) (SqlUserClient, error) {
+func GetSqlClient(connString *ConnectionString) (SqlUserClient, error) {
 	lock.Lock()
 	defer lock.Unlock()
 
