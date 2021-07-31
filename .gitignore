@@ -23,3 +23,5 @@ terraform.tfstate.backup
 terraform-provider-sqlserver
 .terraform.lock.hcl
 tf.log
+
+test_secrets.sh

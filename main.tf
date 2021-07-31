@@ -8,7 +8,7 @@ terraform {
 }
 
 provider "sqlserver" {
-  # connection_string = "Server=localhost;Port=1433;Database=Db1;User Id=sa;Password=Passwd1!;"
+  # connection_string = "Server=tf-2137.database.windows.net;Port=1433;Database=tf-2137;"
   server   = "tf-2137.database.windows.net"
   database = "tf-2137"
   # username = "sa"
