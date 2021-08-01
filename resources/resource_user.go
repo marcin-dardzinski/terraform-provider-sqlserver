@@ -38,17 +38,17 @@ func ResourceUser() *schema.Resource {
 }
 
 func resourceUserCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(sql.SqlUserClient)
+	client := m.(*sql.SqlClient)
+	userClient := sql.CreateSqlUserClient(client)
 
 	name := d.Get("name").(string)
 	password := d.Get("password").(string)
-	roles := d.Get("roles").(*schema.Set)
 
-	err := client.Create(name, password, castStrings(roles))
+	err := userClient.Create(name, password)
 	if err != nil {
 		return err
 	}
-	d.SetId(client.DatabaseId() + "/" + name)
+	d.SetId(client.Id + "/" + name)
 
 	return resourceUserRead(d, m)
 }
@@ -94,10 +94,6 @@ func resourceUserUpdate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	if err := tryChangeRoles(d, client, name); err != nil {
-		return err
-	}
-
 	d.Partial(false)
 
 	return resourceUserRead(d, m)
@@ -111,10 +107,12 @@ func resourceUserDelete(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceUserImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(sql.SqlUserClient)
+	client := m.(*sql.SqlClient)
+	userClient := sql.CreateSqlUserClient(client)
+
 	name := getUserNameFromId(d.Id())
 
-	user, err := client.Get(name)
+	user, err := userClient.Get(name)
 	if err != nil {
 		return []*schema.ResourceData{}, err
 	}
@@ -124,18 +122,9 @@ func resourceUserImport(d *schema.ResourceData, m interface{}) ([]*schema.Resour
 		return []*schema.ResourceData{}, nil
 	}
 
-	d.SetId(client.DatabaseId() + "/" + name)
+	d.SetId(client.Id + "/" + name)
 
 	if err = d.Set("name", user.Name); err != nil {
-		return []*schema.ResourceData{}, err
-	}
-
-	roles := schema.NewSet(schema.HashString, []interface{}{})
-	for _, role := range user.Roles {
-		roles.Add(role)
-	}
-
-	if err = d.Set("roles", roles); err != nil {
 		return []*schema.ResourceData{}, err
 	}
 
@@ -152,25 +141,6 @@ func tryChangePassword(d *schema.ResourceData, client sql.SqlUserClient, name st
 		// TODO: Check if needed
 		// d.SetPartial("password")
 	}
-	return nil
-}
-
-func tryChangeRoles(d *schema.ResourceData, client sql.SqlUserClient, name string) error {
-	if d.HasChange("roles") {
-		oldRaw, newRaw := d.GetChange("roles")
-		old, new := oldRaw.(*schema.Set), newRaw.(*schema.Set)
-
-		grant := new.Difference(old)
-		revoke := old.Difference(new)
-
-		if err := client.ChangeRoles(name, castStrings(grant), castStrings(revoke)); err != nil {
-			return err
-		}
-
-		// TODO: check if needed
-		// d.SetPartial("roles")
-	}
-
 	return nil
 }
 

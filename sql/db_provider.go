@@ -2,23 +2,29 @@ package sql
 
 import "sync"
 
-var pool = map[*ConnectionString]SqlUserClient{}
+var pool = map[string]*SqlClient{}
 var lock sync.Mutex
 
-func GetSqlClient(connString *ConnectionString) (SqlUserClient, error) {
+func CreatePooledSqlClient(config SqlClientConfig) (*SqlClient, error) {
 	lock.Lock()
 	defer lock.Unlock()
 
-	if conn, ok := pool[connString]; ok {
-		return conn, nil
-	}
+	id, err := config.ConnectionString.String()
 
-	conn, err := CreateSqlClient(connString)
 	if err != nil {
 		return nil, err
 	}
 
-	pool[connString] = conn
+	if conn, ok := pool[id]; ok {
+		return conn, nil
+	}
+
+	conn, err := CreateSqlClient(config)
+	if err != nil {
+		return nil, err
+	}
+
+	pool[id] = conn
 	return conn, nil
 }
 
@@ -28,7 +34,7 @@ func DisposeConnections() error {
 
 	for connString, conn := range pool {
 		delete(pool, connString)
-		if err := conn.Close(); err != nil {
+		if err := conn.Db.Close(); err != nil {
 			return err
 		}
 	}

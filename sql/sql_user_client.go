@@ -6,17 +6,11 @@ import (
 	"strings"
 )
 
-func CreateSqlClient(connString *ConnectionString) (SqlUserClient, error) {
-	db, err := CreateDbConnection(SqlClientConfig{
-		ConnectionString: connString,
-	})
-	dbId := parseDatabaseId(connString)
-
-	if err != nil {
-		return nil, err
+func CreateSqlUserClient(client *SqlClient) SqlUserClient {
+	return &sqlUserClient{
+		conn: client.Db,
+		dbId: client.Id,
 	}
-
-	return &sqlUserClient{conn: db, dbId: dbId}, nil
 }
 
 func parseDatabaseId(connString *ConnectionString) string {
@@ -24,20 +18,16 @@ func parseDatabaseId(connString *ConnectionString) string {
 }
 
 type SqlUserClient interface {
-	DatabaseId() string
-
 	Get(name string) (*SqlUser, error)
-	Create(name, password string, roles []string) error
+	Create(name, password string) error
 	ChangePassword(name, password string) error
-	ChangeRoles(name string, grant, revoke []string) error
 	Delete(name string) error
-
-	Close() error
 }
 
 type SqlUser struct {
-	Name  string
-	Roles []string
+	Name     string
+	Password string
+	Roles    []string
 }
 
 type sqlUserClient struct {
@@ -51,9 +41,7 @@ func (client *sqlUserClient) DatabaseId() string {
 
 func (client *sqlUserClient) Get(name string) (*SqlUser, error) {
 	rows, err := client.conn.Query(`
-		SELECT u.name, r.name FROM sys.database_principals u
-		LEFT JOIN sys.database_role_members m on u.principal_id = m.member_principal_id
-		LEFT JOIN sys.database_principals r on r.principal_id = m.role_principal_id
+		SELECT u.name FROM sys.database_principals u
 		WHERE u.name = @name`,
 		sql.Named("name", name))
 
@@ -68,7 +56,7 @@ func (client *sqlUserClient) Get(name string) (*SqlUser, error) {
 		return nil, rows.Err()
 	}
 
-	if err := rows.Scan(&name, &role); err != nil {
+	if err := rows.Scan(&name); err != nil {
 		return nil, err
 	}
 
@@ -91,12 +79,9 @@ func (client *sqlUserClient) Get(name string) (*SqlUser, error) {
 	return &user, nil
 }
 
-func (client *sqlUserClient) Create(name, password string, roles []string) error {
+func (client *sqlUserClient) Create(name, password string) error {
 	var cmd strings.Builder
 	fmt.Fprintf(&cmd, "CREATE USER %s WITH PASSWORD = '%s'\n", name, password)
-	for _, role := range roles {
-		fmt.Fprintf(&cmd, "ALTER ROLE %s ADD MEMBER %s\n", role, name)
-	}
 
 	_, err := client.conn.Exec(cmd.String())
 	return err
@@ -111,27 +96,10 @@ func (client *sqlUserClient) ChangePassword(name, password string) error {
 	return err
 }
 
-func (client *sqlUserClient) ChangeRoles(name string, grant, revoke []string) error {
-	var cmd strings.Builder
-	for _, role := range grant {
-		fmt.Fprintf(&cmd, "ALTER ROLE %s ADD MEMBER %s\n", role, name)
-	}
-	for _, role := range revoke {
-		fmt.Fprintf(&cmd, "ALTER ROLE %s DROP MEMBER %s\n", role, name)
-	}
-
-	_, err := client.conn.Exec(cmd.String())
-	return err
-}
-
 func (client *sqlUserClient) Delete(name string) error {
 	_, err := client.conn.Exec(`
 		EXEC('DROP USER ' + QUOTENAME(@user));
 		`,
 		sql.Named("user", name))
 	return err
-}
-
-func (client *sqlUserClient) Close() error {
-	return client.conn.Close()
 }

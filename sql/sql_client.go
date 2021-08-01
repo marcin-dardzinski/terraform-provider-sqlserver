@@ -25,12 +25,31 @@ type AzureADConfig struct {
 	UseCLI              bool
 }
 
-func CreateDbConnection(config SqlClientConfig) (*sql.DB, error) {
+type SqlClient struct {
+	Db *sql.DB
+	Id string
+}
+
+func CreateSqlClient(config SqlClientConfig) (*SqlClient, error) {
+	var db *sql.DB
+	var err error
+
 	if config.Azure != nil {
-		return createUsingPasswordAuth(config.ConnectionString)
+		db, err = createUsingPasswordAuth(config.ConnectionString)
 	} else {
-		return createUsingAzureActiveDirectoryAuth(config.ConnectionString, config.Azure)
+		db, err = createUsingAzureActiveDirectoryAuth(config.ConnectionString, config.Azure)
 	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	id := parseDatabaseId(config.ConnectionString)
+
+	return &SqlClient{
+		Db: db,
+		Id: id,
+	}, nil
 }
 
 func createUsingPasswordAuth(connString *ConnectionString) (*sql.DB, error) {
@@ -74,7 +93,6 @@ func createUsingAzureActiveDirectoryAuth(connString *ConnectionString, azure *Az
 
 	connector, err := mssql.NewAccessTokenConnector(str, func() (string, error) {
 		token, err := cred.GetToken(context.Background(), azcore.TokenRequestOptions{
-			// Scopes: []string{azureDatabaseResource},
 			Scopes: []string{"https://database.windows.net/.default"},
 		})
 

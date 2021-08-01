@@ -5,7 +5,6 @@ import (
 	"testing"
 )
 
-const connStringKey = "TFSQL_CONN_STR"
 const tenantIdKey = "TFSQL_AZURE_TENANT_ID"
 const clientIdKey = "TFSQL_AZURE_CLIENT_ID"
 const clientSecretKey = "TFSQL_AZURE_CLIENT_SECRET"
