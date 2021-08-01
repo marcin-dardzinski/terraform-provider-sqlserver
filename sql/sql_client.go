@@ -1,10 +1,12 @@
 package sql
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 
-	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	mssql "github.com/denisenkom/go-mssqldb"
 )
 
@@ -14,9 +16,13 @@ type SqlClientConfig struct {
 }
 
 type AzureADConfig struct {
-	TenantId     string
-	ClientId     string
-	ClientSecret string
+	TenantId            string
+	ClientId            string
+	ClientSecret        string
+	CertificatePath     string
+	CertificatePassword string
+	UseMSI              bool
+	UseCLI              bool
 }
 
 func CreateDbConnection(config SqlClientConfig) (*sql.DB, error) {
@@ -46,29 +52,38 @@ func createUsingAzureActiveDirectoryAuth(connString *ConnectionString, azure *Az
 		return nil, err
 	}
 
-	config := auth.NewClientCredentialsConfig(azure.ClientId, azure.ClientSecret, azure.TenantId)
-	config.Resource = "https://database.windows.net/"
+	var cred azcore.TokenCredential
+
+	if azure.ClientSecret != "" {
+		cred, err = azidentity.NewClientSecretCredential(azure.TenantId, azure.ClientId, azure.ClientSecret, nil)
+	} else if azure.CertificatePath != "" {
+		cred, err = azidentity.NewClientCertificateCredential(azure.TenantId, azure.ClientId, azure.CertificatePath, &azidentity.ClientCertificateCredentialOptions{
+			Password: azure.CertificatePassword,
+		})
+	} else if azure.UseMSI {
+		cred, err = azidentity.NewManagedIdentityCredential(azure.ClientId, nil)
+	} else if azure.UseCLI {
+		cred, err = azidentity.NewAzureCLICredential(nil)
+	} else {
+		err = errors.New("no azure authentication method selected")
+	}
+
+	if err != nil {
+		return nil, err
+	}
 
 	connector, err := mssql.NewAccessTokenConnector(str, func() (string, error) {
-		token, err := config.ServicePrincipalToken()
+		token, err := cred.GetToken(context.Background(), azcore.TokenRequestOptions{
+			// Scopes: []string{azureDatabaseResource},
+			Scopes: []string{"https://database.windows.net/.default"},
+		})
+
 		if err != nil {
 			return "", err
 		}
-		if err = token.EnsureFresh(); err != nil {
-			return "", err
-		}
 
-		return token.Token().AccessToken, nil
+		return token.Token, nil
 	})
-
-	// connector, err := mssql.NewAccessTokenConnector(str, func() (string, error) {
-	// 	token, err := cli.GetTokenFromCLI("https://database.windows.net/")
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-
-	// 	return token.AccessToken, nil
-	// })
 
 	if err != nil {
 		return nil, err
