@@ -54,9 +54,10 @@ func resourceUserCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceUserRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(sql.SqlUserClient)
+	client := m.(*sql.SqlClient)
+	userClient := sql.CreateSqlUserClient(client)
 
-	user, err := client.Get(d.Get("name").(string))
+	user, err := userClient.Get(d.Get("name").(string))
 	if err != nil {
 		return err
 	}
@@ -85,12 +86,14 @@ func resourceUserRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceUserUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(sql.SqlUserClient)
+	client := m.(*sql.SqlClient)
+	userClient := sql.CreateSqlUserClient(client)
+
 	name := d.Get("name").(string)
 
 	d.Partial(true)
 
-	if err := tryChangePassword(d, client, name); err != nil {
+	if err := tryChangePassword(d, userClient, name); err != nil {
 		return err
 	}
 
@@ -142,16 +145,6 @@ func tryChangePassword(d *schema.ResourceData, client sql.SqlUserClient, name st
 		// d.SetPartial("password")
 	}
 	return nil
-}
-
-func castStrings(set *schema.Set) []string {
-	raw := set.List()
-	result := make([]string, set.Len())
-	for i := range raw {
-		result[i] = raw[i].(string)
-	}
-
-	return result
 }
 
 func getUserNameFromId(id string) string {

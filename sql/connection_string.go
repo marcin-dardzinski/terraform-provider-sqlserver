@@ -63,7 +63,12 @@ func ParseConnectionString(connectionString string) (*ConnectionString, error) {
 	split := strings.Split(connectionString, ";")
 
 	for _, pairRaw := range split {
+		if pairRaw == "" {
+			continue
+		}
+
 		pair := strings.SplitN(pairRaw, "=", 2)
+
 		if len(pair) != 2 {
 			return nil, fmt.Errorf("unexpected value %s", pairRaw)
 		}

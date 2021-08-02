@@ -34,10 +34,26 @@ func createSqlClientProvider(data *schema.ResourceData) (interface{}, error) {
 		return nil, err
 	}
 
-	azureRaw := data.Get("azure")
+	azureRaw := data.Get("azure").([]interface{})
+
+	var azure *sql.AzureADConfig = nil
+
+	if len(azureRaw) == 1 {
+		azureRaw := azureRaw[0].(map[string]interface{})
+
+		azure = &sql.AzureADConfig{
+			TenantId:            azureRaw["tenant_id"].(string),
+			ClientId:            azureRaw["client_id"].(string),
+			ClientSecret:        azureRaw["client_secret"].(string),
+			CertificatePath:     azureRaw["client_certificate_path"].(string),
+			CertificatePassword: azureRaw["client_certificate_password"].(string),
+			UseMSI:              azureRaw["use_msi"].(bool),
+			UseCLI:              azureRaw["use_cli"].(bool),
+		}
+	}
 
 	return sql.CreatePooledSqlClient(sql.SqlClientConfig{
 		ConnectionString: connString,
-		Azure:            azureRaw.(*sql.AzureADConfig),
+		Azure:            azure,
 	})
 }

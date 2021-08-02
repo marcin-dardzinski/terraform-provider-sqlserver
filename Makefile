@@ -13,7 +13,7 @@ destroy: init
 	terraform destroy
 
 init: build
-	rm .terraform.lock.hcl
+	rm -f .terraform.lock.hcl
 	terraform init
 
 build:

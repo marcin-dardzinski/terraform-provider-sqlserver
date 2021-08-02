@@ -8,16 +8,10 @@ terraform {
 }
 
 provider "sqlserver" {
-  connection_string = ""
-  # fop = ""
-  # connection_string = "Server=tf-2137.database.windows.net;Port=1433;Database=tf-2137;"
-  # server   = "tf-2137.database.windows.net"
-  # database = "tf-2137"
-  # username = "sa"
+  connection_string = "Server=tf-2137.database.windows.net;Port=1433;Database=tf-2137;"
   azure {
 
   }
-  # password = "Passwd1!"
 }
 
 resource "sqlserver_user" "foo55" {

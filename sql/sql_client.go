@@ -34,7 +34,7 @@ func CreateSqlClient(config SqlClientConfig) (*SqlClient, error) {
 	var db *sql.DB
 	var err error
 
-	if config.Azure != nil {
+	if config.Azure == nil {
 		db, err = createUsingPasswordAuth(config.ConnectionString)
 	} else {
 		db, err = createUsingAzureActiveDirectoryAuth(config.ConnectionString, config.Azure)
