@@ -22,16 +22,15 @@ func ResourceUser() *schema.Resource {
 				ForceNew: true,
 			},
 			"password": {
-				Type:      schema.TypeString,
-				Required:  true,
-				Sensitive: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Sensitive:    true,
+				ExactlyOneOf: []string{"external"},
 			},
-			"roles": {
-				Type:     schema.TypeSet,
-				Required: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
+			"external": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
 			},
 		},
 	}
@@ -67,18 +66,7 @@ func resourceUserRead(d *schema.ResourceData, m interface{}) error {
 		return nil
 	}
 
-	desiredRoles := d.Get("roles").(*schema.Set)
-	roles := schema.NewSet(desiredRoles.F, []interface{}{})
-	for _, r := range user.Roles {
-		roles.Add(r)
-	}
-	knownRoles := desiredRoles.Intersection(roles)
-
 	if err = d.Set("name", user.Name); err != nil {
-		return err
-	}
-
-	if err = d.Set("roles", knownRoles); err != nil {
 		return err
 	}
 

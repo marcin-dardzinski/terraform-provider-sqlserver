@@ -25,9 +25,9 @@ type SqlUserClient interface {
 }
 
 type SqlUser struct {
-	Name     string
-	Password string
-	Roles    []string
+	Name          string
+	Password      string
+	ExternalLogin bool
 }
 
 type sqlUserClient struct {
@@ -50,8 +50,6 @@ func (client *sqlUserClient) Get(name string) (*SqlUser, error) {
 	}
 	defer rows.Close()
 
-	var role sql.NullString
-
 	if !rows.Next() {
 		return nil, rows.Err()
 	}
@@ -60,22 +58,11 @@ func (client *sqlUserClient) Get(name string) (*SqlUser, error) {
 		return nil, err
 	}
 
-	var roles []string
-
-	if role.Valid {
-		roles = append(roles, role.String)
-	}
-
-	for rows.Next() {
-		rows.Scan(&name, &role)
-		roles = append(roles, role.String)
-	}
-
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	user := SqlUser{Name: name, Roles: roles}
+	user := SqlUser{Name: name}
 	return &user, nil
 }
 
