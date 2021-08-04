@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/marcin-dardzinski/terraform-provider-sqlserver/resources"
 	"github.com/marcin-dardzinski/terraform-provider-sqlserver/sql"
@@ -11,10 +9,8 @@ import (
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{
-			"sqlserver_user": resources.ResourceUser(),
-		},
-		DataSourcesMap: map[string]*schema.Resource{
-			"sqlserver_connection_string": resources.DataConnectionString(),
+			"sqlserver_user":      resources.ResourceUser(),
+			"sqlserver_user_role": resources.ResourceUserRole(),
 		},
 		Schema:        configSchema(),
 		ConfigureFunc: createSqlClientProvider,
@@ -22,17 +18,7 @@ func Provider() *schema.Provider {
 }
 
 func createSqlClientProvider(data *schema.ResourceData) (interface{}, error) {
-	connStringRaw, ok := data.GetOk("connection_string")
-
-	if !ok {
-		return nil, fmt.Errorf("no connection string")
-	}
-
-	connString, err := sql.ParseConnectionString(connStringRaw.(string))
-
-	if err != nil {
-		return nil, err
-	}
+	connString := data.Get("connection_string").(string)
 
 	azureRaw := data.Get("azure").([]interface{})
 

@@ -8,10 +8,11 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	mssql "github.com/denisenkom/go-mssqldb"
+	"github.com/denisenkom/go-mssqldb/msdsn"
 )
 
 type SqlClientConfig struct {
-	ConnectionString *ConnectionString
+	ConnectionString string
 	Azure            *AzureADConfig
 }
 
@@ -33,7 +34,12 @@ type SqlClient struct {
 
 func CreateSqlClient(config SqlClientConfig) (*SqlClient, error) {
 	var db *sql.DB
-	var err error
+
+	parsedConnStr, _, err := msdsn.Parse(config.ConnectionString)
+
+	if err != nil {
+		return nil, err
+	}
 
 	if config.Azure == nil {
 		db, err = createUsingPasswordAuth(config.ConnectionString)
@@ -45,34 +51,23 @@ func CreateSqlClient(config SqlClientConfig) (*SqlClient, error) {
 		return nil, err
 	}
 
-	id := parseDatabaseId(config.ConnectionString)
-
 	return &SqlClient{
 		Db: db,
-		Id: id,
+		Id: parseDatabaseId(&parsedConnStr),
 	}, nil
 }
 
-func createUsingPasswordAuth(connString *ConnectionString) (*sql.DB, error) {
-	str, err := connString.String()
-	if err != nil {
-		return nil, err
-	}
-
-	return sql.Open("mssql", str)
+func parseDatabaseId(config *msdsn.Config) string {
+	return config.Host + "/" + config.Database
 }
 
-func createUsingAzureActiveDirectoryAuth(connString *ConnectionString, azure *AzureADConfig) (*sql.DB, error) {
-	if connString.Password != "" || connString.Username != "" {
-		return nil, errors.New("connection string must not have username nor password when using Azure AD auth")
-	}
+func createUsingPasswordAuth(connString string) (*sql.DB, error) {
+	return sql.Open("mssql", connString)
+}
 
-	str, err := connString.String()
-	if err != nil {
-		return nil, err
-	}
-
+func createUsingAzureActiveDirectoryAuth(connString string, azure *AzureADConfig) (*sql.DB, error) {
 	var cred azcore.TokenCredential
+	var err error
 
 	if azure.ClientSecret != "" {
 		cred, err = azidentity.NewClientSecretCredential(azure.TenantId, azure.ClientId, azure.ClientSecret, nil)
@@ -94,7 +89,7 @@ func createUsingAzureActiveDirectoryAuth(connString *ConnectionString, azure *Az
 		return nil, err
 	}
 
-	connector, err := mssql.NewAccessTokenConnector(str, func() (string, error) {
+	connector, err := mssql.NewAccessTokenConnector(connString, func() (string, error) {
 		token, err := cred.GetToken(context.Background(), azcore.TokenRequestOptions{
 			Scopes: []string{"https://database.windows.net/.default"},
 		})

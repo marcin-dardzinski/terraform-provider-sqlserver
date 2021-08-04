@@ -9,13 +9,7 @@ func CreatePooledSqlClient(config SqlClientConfig) (*SqlClient, error) {
 	lock.Lock()
 	defer lock.Unlock()
 
-	id, err := config.ConnectionString.String()
-
-	if err != nil {
-		return nil, err
-	}
-
-	if conn, ok := pool[id]; ok {
+	if conn, ok := pool[config.ConnectionString]; ok {
 		return conn, nil
 	}
 
@@ -24,7 +18,7 @@ func CreatePooledSqlClient(config SqlClientConfig) (*SqlClient, error) {
 		return nil, err
 	}
 
-	pool[id] = conn
+	pool[config.ConnectionString] = conn
 	return conn, nil
 }
 

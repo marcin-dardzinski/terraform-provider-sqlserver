@@ -23,15 +23,7 @@ resource "sqlserver_user" "foo" {
   password = "Passwd1!2"
 }
 
-data "sqlserver_connection_string" "root" {
-  server   = "localhost"
-  database = "foo"
-  username = "foo"
-  password = "foo"
+resource "sqlserver_user_role" "foo" {
+  user     = "foo"
+  role = "db_ddladmin"
 }
-
-output "foo" {
-  value     = data.sqlserver_connection_string.root.value
-  sensitive = true
-}
-
