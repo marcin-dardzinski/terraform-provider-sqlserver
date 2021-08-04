@@ -1,24 +1,40 @@
 package sql
 
 import (
+	"database/sql"
 	"os"
 	"testing"
+
+	"github.com/marcin-dardzinski/terraform-provider-sqlserver/consts"
 )
 
-const tenantIdKey = "TFSQL_AZURE_TENANT_ID"
-const clientIdKey = "TFSQL_AZURE_CLIENT_ID"
-const clientSecretKey = "TFSQL_AZURE_CLIENT_SECRET"
+func TestAuthorizeViaSQLUser(t *testing.T) {
+	connString, err := ParseConnectionString(tryGetEnv(consts.ConnectionStringEnv, t))
 
-func TestAuthorizesViaClientSecret(t *testing.T) {
-	connString := &ConnectionString{
-		ServerAddress: "tf-2137.database.windows.net",
-		Database:      "tf-2137",
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	db, err := createUsingPasswordAuth(connString)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pingDb(db, t)
+}
+
+func TestAuthorizeViaClientSecret(t *testing.T) {
+	connString, err := ParseConnectionString(tryGetEnv(consts.UserlessConnectionStringEnv, t))
+
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	azure := &AzureADConfig{
-		ClientId:     getEnv(clientIdKey, t),
-		ClientSecret: getEnv(clientSecretKey, t),
-		TenantId:     getEnv(tenantIdKey, t),
+		ClientId:     tryGetEnv(consts.ClientIdEnv, t),
+		ClientSecret: tryGetEnv(consts.ClientSecretEnv, t),
+		TenantId:     tryGetEnv(consts.TenantIdEnv, t),
 	}
 
 	db, err := createUsingAzureActiveDirectoryAuth(connString, azure)
@@ -27,16 +43,41 @@ func TestAuthorizesViaClientSecret(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err = db.Ping(); err != nil {
+	pingDb(db, t)
+}
+
+func TestAuthorizeViaCli(t *testing.T) {
+	connString, err := ParseConnectionString(tryGetEnv(consts.UserlessConnectionStringEnv, t))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	azure := &AzureADConfig{
+		SubscriptionId: os.Getenv(consts.SubscriptionIdEnv),
+		UseCLI:         true,
+	}
+
+	db, err := createUsingAzureActiveDirectoryAuth(connString, azure)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pingDb(db, t)
+}
+
+func pingDb(db *sql.DB, t *testing.T) {
+	if err := db.Ping(); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func getEnv(name string, t *testing.T) string {
-	val := os.Getenv(name)
+func tryGetEnv(name string, t *testing.T) string {
+	val, ok := os.LookupEnv(name)
 
-	if val == "" {
-		t.Fatalf("Error, missing environment variable %s", name)
+	if !ok {
+		t.Skipf("Missing environment variable %s, skipping test", name)
 	}
 	return val
 }

@@ -10,7 +10,6 @@ terraform {
 provider "sqlserver" {
   connection_string = "Server=tf-2137.database.windows.net;Port=1433;Database=tf-2137;"
   azure {
-
   }
 }
 

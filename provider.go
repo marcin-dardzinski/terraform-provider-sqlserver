@@ -43,6 +43,7 @@ func createSqlClientProvider(data *schema.ResourceData) (interface{}, error) {
 
 		azure = &sql.AzureADConfig{
 			TenantId:            azureRaw["tenant_id"].(string),
+			SubscriptionId:      azureRaw["subscription_id"].(string),
 			ClientId:            azureRaw["client_id"].(string),
 			ClientSecret:        azureRaw["client_secret"].(string),
 			CertificatePath:     azureRaw["client_certificate_path"].(string),

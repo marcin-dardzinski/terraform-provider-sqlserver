@@ -17,6 +17,7 @@ type SqlClientConfig struct {
 
 type AzureADConfig struct {
 	TenantId            string
+	SubscriptionId      string
 	ClientId            string
 	ClientSecret        string
 	CertificatePath     string
@@ -82,7 +83,9 @@ func createUsingAzureActiveDirectoryAuth(connString *ConnectionString, azure *Az
 	} else if azure.UseMSI {
 		cred, err = azidentity.NewManagedIdentityCredential(azure.ClientId, nil)
 	} else if azure.UseCLI {
-		cred, err = azidentity.NewAzureCLICredential(nil)
+		cred, err = azidentity.NewAzureCLICredential(&azidentity.AzureCLICredentialOptions{
+			TokenProvider: tenantAwareAzureCLITokenProvider(azure.TenantId, azure.SubscriptionId),
+		})
 	} else {
 		err = errors.New("no azure authentication method selected")
 	}

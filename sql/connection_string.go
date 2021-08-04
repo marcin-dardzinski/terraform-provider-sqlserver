@@ -2,7 +2,6 @@ package sql
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 )
@@ -55,9 +54,6 @@ func (s *ConnectionString) String() (string, error) {
 
 func ParseConnectionString(connectionString string) (*ConnectionString, error) {
 	// TODO: this is not perfect
-
-	log.Printf("[ERROR] %s", connectionString)
-
 	result := &ConnectionString{}
 
 	split := strings.Split(connectionString, ";")
@@ -85,7 +81,7 @@ func ParseConnectionString(connectionString string) (*ConnectionString, error) {
 			result.Port = port
 		} else if k == "Database" {
 			result.Database = v
-		} else if k == "Username" {
+		} else if k == "User ID" {
 			result.Username = v
 		} else if k == "Password" {
 			result.Password = v

@@ -25,3 +25,4 @@ terraform-provider-sqlserver
 tf.log
 
 test_secrets.sh
+*.pem

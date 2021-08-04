@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/marcin-dardzinski/terraform-provider-sqlserver/consts"
 )
 
 func configSchema() map[string]*schema.Schema {
@@ -12,7 +13,7 @@ func configSchema() map[string]*schema.Schema {
 			Type:        schema.TypeString,
 			Required:    true,
 			Sensitive:   true,
-			DefaultFunc: schema.EnvDefaultFunc("TFSQL_CONNECTION_STRING", ""),
+			DefaultFunc: schema.EnvDefaultFunc(consts.ConnectionStringEnv, ""),
 		},
 		"azure": {
 			Type:     schema.TypeList,
@@ -23,43 +24,44 @@ func configSchema() map[string]*schema.Schema {
 					"tenant_id": {
 						Type:        schema.TypeString,
 						Optional:    true,
-						DefaultFunc: schema.EnvDefaultFunc("TFSQL_AZURE_TENANT_ID", ""),
+						DefaultFunc: schema.EnvDefaultFunc(consts.TenantIdEnv, ""),
+					},
+					"subscription_id": {
+						Type:        schema.TypeString,
+						Optional:    true,
+						DefaultFunc: schema.EnvDefaultFunc(consts.SubscriptionIdEnv, ""),
 					},
 					"client_id": {
 						Type:        schema.TypeString,
 						Optional:    true,
-						DefaultFunc: schema.EnvDefaultFunc("TFSQL_AZURE_CLIENT_ID", ""),
+						DefaultFunc: schema.EnvDefaultFunc(consts.ClientIdEnv, ""),
 					},
 					"client_secret": {
 						Type:        schema.TypeString,
 						Optional:    true,
 						Sensitive:   true,
-						DefaultFunc: schema.EnvDefaultFunc("TFSQL_AZURE_CLIENT_SECRET", ""),
+						DefaultFunc: schema.EnvDefaultFunc(consts.ClientSecretEnv, ""),
 					},
 					"client_certificate_path": {
 						Type:        schema.TypeString,
 						Optional:    true,
-						DefaultFunc: schema.EnvDefaultFunc("TFSQL_AZURE_CLIENT_CERTIFICATE_PATH", ""),
+						DefaultFunc: schema.EnvDefaultFunc(consts.ClientCertificatePathEnv, ""),
 					},
 					"client_certificate_password": {
 						Type:        schema.TypeString,
 						Optional:    true,
 						Sensitive:   true,
-						DefaultFunc: schema.EnvDefaultFunc("TFSQL_AZURE_CLIENT_CERTIFICATE_PASSWORD", ""),
+						DefaultFunc: schema.EnvDefaultFunc(consts.ClientCertificatePasswordEnv, ""),
 					},
 					"use_msi": {
 						Type:        schema.TypeBool,
 						Optional:    true,
-						DefaultFunc: schema.EnvDefaultFunc("TFSQL_AZURE_USE_MSI", "false"),
-						// func() (interface{}, error) {
-						// 	str, err := schema.EnvDefaultFunc("TFSQL_AZURE_USE_MSI", "false")
-						// 	return boolFromString(str), err
-						// },
+						DefaultFunc: schema.EnvDefaultFunc(consts.UseMsiEnv, "false"),
 					},
 					"use_cli": {
 						Type:        schema.TypeBool,
 						Optional:    true,
-						DefaultFunc: schema.EnvDefaultFunc("TFSQL_AZURE_USE_CLI", "true"),
+						DefaultFunc: schema.EnvDefaultFunc(consts.UseCliEnv, "true"),
 					},
 				},
 			},
