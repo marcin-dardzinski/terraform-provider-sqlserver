@@ -1,79 +1,75 @@
 package main
 
 import (
-	"github.com/hashicorp/terraform/helper/schema"
+	"strings"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/marcin-dardzinski/terraform-provider-sqlserver/consts"
 )
 
 func configSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
 		"connection_string": {
 			Type:        schema.TypeString,
-			Optional:    true,
+			Required:    true,
 			Sensitive:   true,
-			DefaultFunc: schema.EnvDefaultFunc("SQLSERVER_CONN_STRING", ""),
-			// ConflictsWith: []string{
-			// 	"server",
-			// 	"port",
-			// 	"database",
-			// 	"username",
-			// 	"password",
-			// 	"connection_timeout",
-			// 	"max_pool_size",
-			// 	"trust_server_certificate",
-			// 	"persist_security_info",
-			// 	"encrypt",
-			// },
+			DefaultFunc: schema.EnvDefaultFunc(consts.ConnectionStringEnv, ""),
 		},
-		"server": {
-			Type:        schema.TypeString,
-			Optional:    true,
-			DefaultFunc: schema.EnvDefaultFunc("SQLSERVER_SERVER", ""),
-		},
-		"port": {
-			Type:        schema.TypeInt,
-			Optional:    true,
-			DefaultFunc: schema.EnvDefaultFunc("SQLSERVER_SERVER", 1433),
-		},
-		"database": {
-			Type:        schema.TypeString,
-			Optional:    true,
-			DefaultFunc: schema.EnvDefaultFunc("SQLSERVER_DATABASE", ""),
-		},
-		"username": {
-			Type:        schema.TypeString,
-			Optional:    true,
-			DefaultFunc: schema.EnvDefaultFunc("SQLSERVER_USERNAME", ""),
-		},
-		"password": {
-			Type:        schema.TypeString,
-			Optional:    true,
-			Sensitive:   true,
-			DefaultFunc: schema.EnvDefaultFunc("SQLSERVER_PASSWORD", ""),
-		},
-		"connection_timeout": {
-			Type:        schema.TypeInt,
-			Optional:    true,
-			DefaultFunc: schema.EnvDefaultFunc("SQLSERVER_CONNECTION_TIMEOUT", 30),
-		},
-		"max_pool_size": {
-			Type:        schema.TypeInt,
-			Optional:    true,
-			DefaultFunc: schema.EnvDefaultFunc("SQLSERVER_MAX_POOL_SIZE", 100),
-		},
-		"trust_server_certificate": {
-			Type:        schema.TypeBool,
-			Optional:    true,
-			DefaultFunc: schema.EnvDefaultFunc("SQLSERVER_TRUST_SERVER_CERTIFICATE", false),
-		},
-		"persist_security_info": {
-			Type:        schema.TypeBool,
-			Optional:    true,
-			DefaultFunc: schema.EnvDefaultFunc("SQLSERVER_PERSIST_SECURITY_INFO", false),
-		},
-		"encrypt": {
-			Type:        schema.TypeBool,
-			Optional:    true,
-			DefaultFunc: schema.EnvDefaultFunc("SQLSERVER_ENCRYPT", true),
+		"azure": {
+			Type:     schema.TypeList,
+			MaxItems: 1,
+			Optional: true,
+			Elem: &schema.Resource{
+				Schema: map[string]*schema.Schema{
+					"tenant_id": {
+						Type:        schema.TypeString,
+						Optional:    true,
+						DefaultFunc: schema.EnvDefaultFunc(consts.TenantIdEnv, ""),
+					},
+					"subscription_id": {
+						Type:        schema.TypeString,
+						Optional:    true,
+						DefaultFunc: schema.EnvDefaultFunc(consts.SubscriptionIdEnv, ""),
+					},
+					"client_id": {
+						Type:        schema.TypeString,
+						Optional:    true,
+						DefaultFunc: schema.EnvDefaultFunc(consts.ClientIdEnv, ""),
+					},
+					"client_secret": {
+						Type:        schema.TypeString,
+						Optional:    true,
+						Sensitive:   true,
+						DefaultFunc: schema.EnvDefaultFunc(consts.ClientSecretEnv, ""),
+					},
+					"client_certificate_path": {
+						Type:        schema.TypeString,
+						Optional:    true,
+						DefaultFunc: schema.EnvDefaultFunc(consts.ClientCertificatePathEnv, ""),
+					},
+					"client_certificate_password": {
+						Type:        schema.TypeString,
+						Optional:    true,
+						Sensitive:   true,
+						DefaultFunc: schema.EnvDefaultFunc(consts.ClientCertificatePasswordEnv, ""),
+					},
+					"use_msi": {
+						Type:        schema.TypeBool,
+						Optional:    true,
+						DefaultFunc: schema.EnvDefaultFunc(consts.UseMsiEnv, "false"),
+					},
+					"use_cli": {
+						Type:        schema.TypeBool,
+						Optional:    true,
+						DefaultFunc: schema.EnvDefaultFunc(consts.UseCliEnv, "true"),
+					},
+				},
+			},
 		},
 	}
+}
+
+func boolFromString(x string) bool {
+	x = strings.ToLower(x)
+	return x == "true" || x == "1" || x == "t" || x == "y"
 }

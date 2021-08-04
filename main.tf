@@ -1,28 +1,26 @@
+terraform {
+  required_providers {
+    sqlserver = {
+      source  = "local/local/sqlserver"
+      version = "1.0.0"
+    }
+  }
+}
+
 provider "sqlserver" {
-  # connection_string = "Server=localhost;Port=1433;Database=Db1;User Id=sa;Password=Passwd1!;"
-  server   = "localhost"
-  database = "Db1"
-  username = "sa"
-  password = "Passwd1!"
+  connection_string = "Server=tf-2137.database.windows.net;Port=1433;Database=tf-2137;"
+  azure {
+  }
 }
 
 resource "sqlserver_user" "foo55" {
   name     = "foo55"
   password = "Passwd1!2"
-  roles = [
-    "db_datareader",
-    "db_datawriter",
-    "db_ddladmin"
-  ]
 }
 
 resource "sqlserver_user" "foo" {
   name     = "foo"
   password = "Passwd1!2"
-  roles = [
-    "db_datareader",
-    "db_datawriter"
-  ]
 }
 
 data "sqlserver_connection_string" "root" {

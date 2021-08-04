@@ -3,7 +3,7 @@ package resources
 import (
 	"strings"
 
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/marcin-dardzinski/terraform-provider-sqlserver/sql"
 )
 
@@ -22,41 +22,41 @@ func ResourceUser() *schema.Resource {
 				ForceNew: true,
 			},
 			"password": {
-				Type:      schema.TypeString,
-				Required:  true,
-				Sensitive: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Sensitive:    true,
+				ExactlyOneOf: []string{"external"},
 			},
-			"roles": {
-				Type:     schema.TypeSet,
-				Required: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
+			"external": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
 			},
 		},
 	}
 }
 
 func resourceUserCreate(d *schema.ResourceData, m interface{}) error {
-	client := m.(sql.SqlUserClient)
+	client := m.(*sql.SqlClient)
+	userClient := sql.CreateSqlUserClient(client)
 
 	name := d.Get("name").(string)
 	password := d.Get("password").(string)
-	roles := d.Get("roles").(*schema.Set)
 
-	err := client.Create(name, password, castStrings(roles))
+	err := userClient.Create(name, password)
 	if err != nil {
 		return err
 	}
-	d.SetId(client.DatabaseId() + "/" + name)
+	d.SetId(client.Id + "/" + name)
 
 	return resourceUserRead(d, m)
 }
 
 func resourceUserRead(d *schema.ResourceData, m interface{}) error {
-	client := m.(sql.SqlUserClient)
+	client := m.(*sql.SqlClient)
+	userClient := sql.CreateSqlUserClient(client)
 
-	user, err := client.Get(d.Get("name").(string))
+	user, err := userClient.Get(d.Get("name").(string))
 	if err != nil {
 		return err
 	}
@@ -66,18 +66,7 @@ func resourceUserRead(d *schema.ResourceData, m interface{}) error {
 		return nil
 	}
 
-	desiredRoles := d.Get("roles").(*schema.Set)
-	roles := schema.NewSet(desiredRoles.F, []interface{}{})
-	for _, r := range user.Roles {
-		roles.Add(r)
-	}
-	knownRoles := desiredRoles.Intersection(roles)
-
 	if err = d.Set("name", user.Name); err != nil {
-		return err
-	}
-
-	if err = d.Set("roles", knownRoles); err != nil {
 		return err
 	}
 
@@ -85,16 +74,14 @@ func resourceUserRead(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceUserUpdate(d *schema.ResourceData, m interface{}) error {
-	client := m.(sql.SqlUserClient)
+	client := m.(*sql.SqlClient)
+	userClient := sql.CreateSqlUserClient(client)
+
 	name := d.Get("name").(string)
 
 	d.Partial(true)
 
-	if err := tryChangePassword(d, client, name); err != nil {
-		return err
-	}
-
-	if err := tryChangeRoles(d, client, name); err != nil {
+	if err := tryChangePassword(d, userClient, name); err != nil {
 		return err
 	}
 
@@ -111,10 +98,12 @@ func resourceUserDelete(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceUserImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
-	client := m.(sql.SqlUserClient)
+	client := m.(*sql.SqlClient)
+	userClient := sql.CreateSqlUserClient(client)
+
 	name := getUserNameFromId(d.Id())
 
-	user, err := client.Get(name)
+	user, err := userClient.Get(name)
 	if err != nil {
 		return []*schema.ResourceData{}, err
 	}
@@ -124,18 +113,9 @@ func resourceUserImport(d *schema.ResourceData, m interface{}) ([]*schema.Resour
 		return []*schema.ResourceData{}, nil
 	}
 
-	d.SetId(client.DatabaseId() + "/" + name)
+	d.SetId(client.Id + "/" + name)
 
 	if err = d.Set("name", user.Name); err != nil {
-		return []*schema.ResourceData{}, err
-	}
-
-	roles := schema.NewSet(schema.HashString, []interface{}{})
-	for _, role := range user.Roles {
-		roles.Add(role)
-	}
-
-	if err = d.Set("roles", roles); err != nil {
 		return []*schema.ResourceData{}, err
 	}
 
@@ -149,37 +129,10 @@ func tryChangePassword(d *schema.ResourceData, client sql.SqlUserClient, name st
 			return err
 		}
 
-		d.SetPartial("password")
+		// TODO: Check if needed
+		// d.SetPartial("password")
 	}
 	return nil
-}
-
-func tryChangeRoles(d *schema.ResourceData, client sql.SqlUserClient, name string) error {
-	if d.HasChange("roles") {
-		oldRaw, newRaw := d.GetChange("roles")
-		old, new := oldRaw.(*schema.Set), newRaw.(*schema.Set)
-
-		grant := new.Difference(old)
-		revoke := old.Difference(new)
-
-		if err := client.ChangeRoles(name, castStrings(grant), castStrings(revoke)); err != nil {
-			return err
-		}
-
-		d.SetPartial("roles")
-	}
-
-	return nil
-}
-
-func castStrings(set *schema.Set) []string {
-	raw := set.List()
-	result := make([]string, set.Len())
-	for i := range raw {
-		result[i] = raw[i].(string)
-	}
-
-	return result
 }
 
 func getUserNameFromId(id string) string {

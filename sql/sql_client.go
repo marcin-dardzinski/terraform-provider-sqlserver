@@ -1,156 +1,114 @@
 package sql
 
 import (
+	"context"
 	"database/sql"
-	"fmt"
-	"strings"
+	"errors"
 
-	_ "github.com/denisenkom/go-mssqldb"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	mssql "github.com/denisenkom/go-mssqldb"
 )
 
-func CreateSqlClient(connString string) (SqlUserClient, error) {
-	conn, err := sql.Open("mssql", connString)
+type SqlClientConfig struct {
+	ConnectionString *ConnectionString
+	Azure            *AzureADConfig
+}
+
+type AzureADConfig struct {
+	TenantId            string
+	SubscriptionId      string
+	ClientId            string
+	ClientSecret        string
+	CertificatePath     string
+	CertificatePassword string
+	UseMSI              bool
+	UseCLI              bool
+}
+
+type SqlClient struct {
+	Db *sql.DB
+	Id string
+}
+
+func CreateSqlClient(config SqlClientConfig) (*SqlClient, error) {
+	var db *sql.DB
+	var err error
+
+	if config.Azure == nil {
+		db, err = createUsingPasswordAuth(config.ConnectionString)
+	} else {
+		db, err = createUsingAzureActiveDirectoryAuth(config.ConnectionString, config.Azure)
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
-	dbId := parseDatabaseId(connString)
+	id := parseDatabaseId(config.ConnectionString)
 
-	return &sqlUserClient{conn: conn, dbId: dbId}, nil
+	return &SqlClient{
+		Db: db,
+		Id: id,
+	}, nil
 }
 
-func parseDatabaseId(connString string) string {
-	server, db := "", ""
-
-	split := strings.Split(connString, ";")
-
-	for _, entries := range split {
-		raw := strings.SplitN(entries, "=", 2)
-		if len(raw) < 2 {
-			continue
-		}
-
-		key, value := raw[0], raw[1]
-
-		if key == "Server" {
-			server = value
-		} else if key == "Database" {
-			db = value
-		}
+func createUsingPasswordAuth(connString *ConnectionString) (*sql.DB, error) {
+	str, err := connString.String()
+	if err != nil {
+		return nil, err
 	}
 
-	return server + "/" + db
+	return sql.Open("mssql", str)
 }
 
-type SqlUserClient interface {
-	DatabaseId() string
+func createUsingAzureActiveDirectoryAuth(connString *ConnectionString, azure *AzureADConfig) (*sql.DB, error) {
+	if connString.Password != "" || connString.Username != "" {
+		return nil, errors.New("connection string must not have username nor password when using Azure AD auth")
+	}
 
-	Get(name string) (*SqlUser, error)
-	Create(name, password string, roles []string) error
-	ChangePassword(name, password string) error
-	ChangeRoles(name string, grant, revoke []string) error
-	Delete(name string) error
+	str, err := connString.String()
+	if err != nil {
+		return nil, err
+	}
 
-	Close() error
-}
+	var cred azcore.TokenCredential
 
-type SqlUser struct {
-	Name  string
-	Roles []string
-}
-
-type sqlUserClient struct {
-	conn *sql.DB
-	dbId string
-}
-
-func (client *sqlUserClient) DatabaseId() string {
-	return client.dbId
-}
-
-func (client *sqlUserClient) Get(name string) (*SqlUser, error) {
-	rows, err := client.conn.Query(`
-		SELECT u.name, r.name FROM sys.database_principals u
-		LEFT JOIN sys.database_role_members m on u.principal_id = m.member_principal_id
-		LEFT JOIN sys.database_principals r on r.principal_id = m.role_principal_id
-		WHERE u.name = :name`,
-		sql.Named("name", name))
+	if azure.ClientSecret != "" {
+		cred, err = azidentity.NewClientSecretCredential(azure.TenantId, azure.ClientId, azure.ClientSecret, nil)
+	} else if azure.CertificatePath != "" {
+		cred, err = azidentity.NewClientCertificateCredential(azure.TenantId, azure.ClientId, azure.CertificatePath, &azidentity.ClientCertificateCredentialOptions{
+			Password: azure.CertificatePassword,
+		})
+	} else if azure.UseMSI {
+		cred, err = azidentity.NewManagedIdentityCredential(azure.ClientId, nil)
+	} else if azure.UseCLI {
+		cred, err = azidentity.NewAzureCLICredential(&azidentity.AzureCLICredentialOptions{
+			TokenProvider: tenantAwareAzureCLITokenProvider(azure.TenantId, azure.SubscriptionId),
+		})
+	} else {
+		err = errors.New("no azure authentication method selected")
+	}
 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	var role sql.NullString
+	connector, err := mssql.NewAccessTokenConnector(str, func() (string, error) {
+		token, err := cred.GetToken(context.Background(), azcore.TokenRequestOptions{
+			Scopes: []string{"https://database.windows.net/.default"},
+		})
 
-	if !rows.Next() {
-		return nil, rows.Err()
-	}
+		if err != nil {
+			return "", err
+		}
 
-	if err := rows.Scan(&name, &role); err != nil {
+		return token.Token, nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
-	var roles []string
-
-	if role.Valid {
-		roles = append(roles, role.String)
-	}
-
-	for rows.Next() {
-		rows.Scan(&name, &role)
-		roles = append(roles, role.String)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	user := SqlUser{Name: name, Roles: roles}
-	return &user, nil
-}
-
-func (client *sqlUserClient) Create(name, password string, roles []string) error {
-	var cmd strings.Builder
-	fmt.Fprintf(&cmd, "CREATE USER %s WITH PASSWORD = '%s'\n", name, password)
-	for _, role := range roles {
-		fmt.Fprintf(&cmd, "ALTER ROLE %s ADD MEMBER %s\n", role, name)
-	}
-
-	_, err := client.conn.Exec(cmd.String())
-	return err
-}
-
-func (client *sqlUserClient) ChangePassword(name, password string) error {
-	_, err := client.conn.Exec(`
-		DECLARE @Sql NVARCHAR(MAX) = 'ALTER USER ' + QUOTENAME(:user) + ' WITH PASSWORD = '''  + :password + ''''; 
-		EXEC(@Sql)`,
-		sql.Named("user", name),
-		sql.Named("password", password))
-	return err
-}
-
-func (client *sqlUserClient) ChangeRoles(name string, grant, revoke []string) error {
-	var cmd strings.Builder
-	for _, role := range grant {
-		fmt.Fprintf(&cmd, "ALTER ROLE %s ADD MEMBER %s\n", role, name)
-	}
-	for _, role := range revoke {
-		fmt.Fprintf(&cmd, "ALTER ROLE %s DROP MEMBER %s\n", role, name)
-	}
-
-	_, err := client.conn.Exec(cmd.String())
-	return err
-}
-
-func (client *sqlUserClient) Delete(name string) error {
-	_, err := client.conn.Exec(`
-		DECLARE @Sql NVARCHAR(MAX) = 'DROP USER ' + QUOTENAME(:user);
-		EXEC(@Sql)`,
-		sql.Named("user", name))
-	return err
-}
-
-func (client *sqlUserClient) Close() error {
-	return client.conn.Close()
+	return sql.OpenDB(connector), nil
 }

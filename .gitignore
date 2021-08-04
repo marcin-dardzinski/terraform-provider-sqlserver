@@ -14,10 +14,15 @@
 crash.log
 
 # Dependency directories (remove the comment below to include it)
-# vendor/
+vendor/
 
 .terraform
 terraform.tfstate
 terraform.tfstate.backup
 
 terraform-provider-sqlserver
+.terraform.lock.hcl
+tf.log
+
+test_secrets.sh
+*.pem

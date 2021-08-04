@@ -1,8 +1,12 @@
 module github.com/marcin-dardzinski/terraform-provider-sqlserver
 
-go 1.14
+go 1.16
 
 require (
-	github.com/denisenkom/go-mssqldb v0.0.0-20200620013148-b91950f658ec
-	github.com/hashicorp/terraform v0.12.29
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v0.14.0
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v0.9.2
+	github.com/denisenkom/go-mssqldb v0.10.0
+	github.com/hashicorp/terraform-plugin-sdk/v2 v2.7.0
+	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a // indirect
+// github.com/hashicorp/terraform-plugin-test v1.4.0 // indirect
 )
