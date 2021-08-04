@@ -9,12 +9,7 @@ import (
 )
 
 func TestAuthorizeViaSQLUser(t *testing.T) {
-	connString, err := ParseConnectionString(tryGetEnv(consts.ConnectionStringEnv, t))
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	connString := tryGetEnv(consts.ConnectionStringEnv, t)
 	db, err := createUsingPasswordAuth(connString)
 
 	if err != nil {
@@ -25,12 +20,7 @@ func TestAuthorizeViaSQLUser(t *testing.T) {
 }
 
 func TestAuthorizeViaClientSecret(t *testing.T) {
-	connString, err := ParseConnectionString(tryGetEnv(consts.UserlessConnectionStringEnv, t))
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	connString := tryGetEnv(consts.UserlessConnectionStringEnv, t)
 	azure := &AzureADConfig{
 		ClientId:     tryGetEnv(consts.ClientIdEnv, t),
 		ClientSecret: tryGetEnv(consts.ClientSecretEnv, t),
@@ -47,12 +37,7 @@ func TestAuthorizeViaClientSecret(t *testing.T) {
 }
 
 func TestAuthorizeViaCli(t *testing.T) {
-	connString, err := ParseConnectionString(tryGetEnv(consts.UserlessConnectionStringEnv, t))
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	connString := tryGetEnv(consts.UserlessConnectionStringEnv, t)
 	azure := &AzureADConfig{
 		SubscriptionId: os.Getenv(consts.SubscriptionIdEnv),
 		UseCLI:         true,
