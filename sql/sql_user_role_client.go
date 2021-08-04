@@ -54,14 +54,14 @@ func (client *sqlUserRoleClient) Exists(role SqlUserRole) (bool, error) {
 
 func (client *sqlUserRoleClient) Grant(role SqlUserRole) error {
 	_, err := client.conn.Exec(
-		fmt.Sprintf("ALTER ROLE %s ADD MEMBER %s", role.Role, role.User))
+		fmt.Sprintf("ALTER ROLE [%s] ADD MEMBER [%s]", role.Role, role.User))
 
 	return err
 }
 
 func (client *sqlUserRoleClient) Revoke(role SqlUserRole) error {
 	_, err := client.conn.Exec(
-		fmt.Sprintf("ALTER ROLE %s DROP MEMBER %s", role.Role, role.User))
+		fmt.Sprintf("ALTER ROLE [%s] DROP MEMBER [%s]", role.Role, role.User))
 
 	return err
 }

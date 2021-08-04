@@ -3,7 +3,6 @@ package sql
 import (
 	"database/sql"
 	"fmt"
-	"strings"
 )
 
 func CreateSqlUserClient(client *SqlClient) SqlUserClient {
@@ -15,7 +14,7 @@ func CreateSqlUserClient(client *SqlClient) SqlUserClient {
 
 type SqlUserClient interface {
 	Get(name string) (*SqlUser, error)
-	Create(name, password string) error
+	Create(user *SqlUser) error
 	ChangePassword(name, password string) error
 	Delete(name string) error
 }
@@ -37,8 +36,9 @@ func (client *sqlUserClient) DatabaseId() string {
 
 func (client *sqlUserClient) Get(name string) (*SqlUser, error) {
 	rows, err := client.conn.Query(`
-		SELECT u.name FROM sys.database_principals u
-		WHERE u.name = @name`,
+		SELECT u.[name], u.[type] 
+		FROM sys.database_principals u
+		WHERE u.[name] = @name AND u.[type] in ('E', 'S', 'U')`,
 		sql.Named("name", name))
 
 	if err != nil {
@@ -50,7 +50,9 @@ func (client *sqlUserClient) Get(name string) (*SqlUser, error) {
 		return nil, rows.Err()
 	}
 
-	if err := rows.Scan(&name); err != nil {
+	var userType string
+
+	if err := rows.Scan(&name, &userType); err != nil {
 		return nil, err
 	}
 
@@ -58,15 +60,23 @@ func (client *sqlUserClient) Get(name string) (*SqlUser, error) {
 		return nil, err
 	}
 
-	user := SqlUser{Name: name}
+	user := SqlUser{
+		Name:          name,
+		ExternalLogin: userType == "E"}
 	return &user, nil
 }
 
-func (client *sqlUserClient) Create(name, password string) error {
-	var cmd strings.Builder
-	fmt.Fprintf(&cmd, "CREATE USER %s WITH PASSWORD = '%s'\n", name, password)
+func (client *sqlUserClient) Create(user *SqlUser) error {
+	var cmd string
 
-	_, err := client.conn.Exec(cmd.String())
+	if user.ExternalLogin {
+		cmd = fmt.Sprintf("CREATE USER [%s] FROM EXTERNAL PROVIDER", user.Name)
+	} else {
+
+		cmd = fmt.Sprintf("CREATE USER [%s] WITH PASSWORD = '%s'\n", user.Name, user.Password)
+	}
+
+	_, err := client.conn.Exec(cmd)
 	return err
 }
 
@@ -80,9 +90,6 @@ func (client *sqlUserClient) ChangePassword(name, password string) error {
 }
 
 func (client *sqlUserClient) Delete(name string) error {
-	_, err := client.conn.Exec(`
-		EXEC('DROP USER ' + QUOTENAME(@user));
-		`,
-		sql.Named("user", name))
+	_, err := client.conn.Exec(fmt.Sprintf("DROP USER [%s]", name))
 	return err
 }

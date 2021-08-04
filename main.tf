@@ -19,11 +19,12 @@ resource "sqlserver_user" "foo55" {
 }
 
 resource "sqlserver_user" "foo" {
-  name     = "foo"
-  password = "Passwd1!2"
+  name     = "test-managed-identity"
+  # password = "Passwd1!"
+  external = true
 }
 
 resource "sqlserver_user_role" "foo" {
-  user     = "foo"
+  user     = "test-managed-identity"
   role = "db_ddladmin"
 }

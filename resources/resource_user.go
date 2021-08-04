@@ -40,14 +40,16 @@ func resourceUserCreate(d *schema.ResourceData, m interface{}) error {
 	client := m.(*sql.SqlClient)
 	userClient := sql.CreateSqlUserClient(client)
 
-	name := d.Get("name").(string)
-	password := d.Get("password").(string)
-
-	err := userClient.Create(name, password)
+	user := &sql.SqlUser{
+		Name:          d.Get("name").(string),
+		Password:      d.Get("password").(string),
+		ExternalLogin: d.Get("external").(bool),
+	}
+	err := userClient.Create(user)
 	if err != nil {
 		return err
 	}
-	d.SetId(client.Id + "/" + name)
+	d.SetId(client.Id + "/user/" + user.Name)
 
 	return resourceUserRead(d, m)
 }
@@ -67,6 +69,10 @@ func resourceUserRead(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if err = d.Set("name", user.Name); err != nil {
+		return err
+	}
+
+	if err = d.Set("external", user.ExternalLogin); err != nil {
 		return err
 	}
 
@@ -91,10 +97,12 @@ func resourceUserUpdate(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceUserDelete(d *schema.ResourceData, m interface{}) error {
-	client := m.(sql.SqlUserClient)
+	client := m.(*sql.SqlClient)
+	userClient := sql.CreateSqlUserClient(client)
+
 	name := d.Get("name").(string)
 
-	return client.Delete(name)
+	return userClient.Delete(name)
 }
 
 func resourceUserImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
@@ -113,9 +121,13 @@ func resourceUserImport(d *schema.ResourceData, m interface{}) ([]*schema.Resour
 		return []*schema.ResourceData{}, nil
 	}
 
-	d.SetId(client.Id + "/" + name)
+	d.SetId(resourceUserId(client.Id, user.Name))
 
 	if err = d.Set("name", user.Name); err != nil {
+		return []*schema.ResourceData{}, err
+	}
+
+	if err = d.Set("external", user.ExternalLogin); err != nil {
 		return []*schema.ResourceData{}, err
 	}
 
@@ -133,6 +145,10 @@ func tryChangePassword(d *schema.ResourceData, client sql.SqlUserClient, name st
 		// d.SetPartial("password")
 	}
 	return nil
+}
+
+func resourceUserId(dbId, name string) string {
+	return dbId + "/user/" + name
 }
 
 func getUserNameFromId(id string) string {
