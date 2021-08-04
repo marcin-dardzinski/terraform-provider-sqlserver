@@ -53,6 +53,10 @@ func CreateSqlClient(config SqlClientConfig) (*SqlClient, error) {
 	}, nil
 }
 
+func parseDatabaseId(connString *ConnectionString) string {
+	return connString.ServerAddress + "/" + connString.Database
+}
+
 func createUsingPasswordAuth(connString *ConnectionString) (*sql.DB, error) {
 	str, err := connString.String()
 	if err != nil {

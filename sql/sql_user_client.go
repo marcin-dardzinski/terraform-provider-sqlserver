@@ -13,10 +13,6 @@ func CreateSqlUserClient(client *SqlClient) SqlUserClient {
 	}
 }
 
-func parseDatabaseId(connString *ConnectionString) string {
-	return connString.ServerAddress + "/" + connString.Database
-}
-
 type SqlUserClient interface {
 	Get(name string) (*SqlUser, error)
 	Create(name, password string) error

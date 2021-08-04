@@ -11,7 +11,8 @@ import (
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{
-			"sqlserver_user": resources.ResourceUser(),
+			"sqlserver_user":      resources.ResourceUser(),
+			"sqlserver_user_role": resources.ResourceUserRole(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"sqlserver_connection_string": resources.DataConnectionString(),

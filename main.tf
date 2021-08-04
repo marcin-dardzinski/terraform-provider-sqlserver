@@ -23,6 +23,11 @@ resource "sqlserver_user" "foo" {
   password = "Passwd1!2"
 }
 
+resource "sqlserver_user_role" "foo" {
+  user     = "foo"
+  role = "db_ddladmin"
+}
+
 data "sqlserver_connection_string" "root" {
   server   = "localhost"
   database = "foo"
