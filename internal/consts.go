@@ -1,8 +1,7 @@
-package consts
-
-const ConnectionStringEnv = "TFSQL_CONNECTION_STRING"
+package internal
 
 // for tests only
+const ConnectionStringEnv = "TFSQL_CONNECTION_STRING"
 const UserlessConnectionStringEnv = "TFSQL_USERLESS_CONNECTION_STRING"
 const TenantIdEnv = "TFSQL_AZURE_TENANT_ID"
 const SubscriptionIdEnv = "TFSQL_AZURE_SUBSCRIPTION_ID"

@@ -1,8 +1,8 @@
-package main
+package internal
 
 import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/marcin-dardzinski/terraform-provider-sqlserver/resources"
+	"github.com/marcin-dardzinski/terraform-provider-sqlserver/internal/resources"
 	"github.com/marcin-dardzinski/terraform-provider-sqlserver/sql"
 )
 

@@ -1,10 +1,7 @@
-package main
+package internal
 
 import (
-	"strings"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/marcin-dardzinski/terraform-provider-sqlserver/consts"
 )
 
 func configSchema() map[string]*schema.Schema {
@@ -13,7 +10,7 @@ func configSchema() map[string]*schema.Schema {
 			Type:        schema.TypeString,
 			Required:    true,
 			Sensitive:   true,
-			DefaultFunc: schema.EnvDefaultFunc(consts.ConnectionStringEnv, ""),
+			DefaultFunc: schema.EnvDefaultFunc(ConnectionStringEnv, ""),
 		},
 		"azure": {
 			Type:     schema.TypeList,
@@ -24,44 +21,44 @@ func configSchema() map[string]*schema.Schema {
 					"tenant_id": {
 						Type:        schema.TypeString,
 						Optional:    true,
-						DefaultFunc: schema.EnvDefaultFunc(consts.TenantIdEnv, ""),
+						DefaultFunc: schema.EnvDefaultFunc(TenantIdEnv, ""),
 					},
 					"subscription_id": {
 						Type:        schema.TypeString,
 						Optional:    true,
-						DefaultFunc: schema.EnvDefaultFunc(consts.SubscriptionIdEnv, ""),
+						DefaultFunc: schema.EnvDefaultFunc(SubscriptionIdEnv, ""),
 					},
 					"client_id": {
 						Type:        schema.TypeString,
 						Optional:    true,
-						DefaultFunc: schema.EnvDefaultFunc(consts.ClientIdEnv, ""),
+						DefaultFunc: schema.EnvDefaultFunc(ClientIdEnv, ""),
 					},
 					"client_secret": {
 						Type:        schema.TypeString,
 						Optional:    true,
 						Sensitive:   true,
-						DefaultFunc: schema.EnvDefaultFunc(consts.ClientSecretEnv, ""),
+						DefaultFunc: schema.EnvDefaultFunc(ClientSecretEnv, ""),
 					},
 					"client_certificate_path": {
 						Type:        schema.TypeString,
 						Optional:    true,
-						DefaultFunc: schema.EnvDefaultFunc(consts.ClientCertificatePathEnv, ""),
+						DefaultFunc: schema.EnvDefaultFunc(ClientCertificatePathEnv, ""),
 					},
 					"client_certificate_password": {
 						Type:        schema.TypeString,
 						Optional:    true,
 						Sensitive:   true,
-						DefaultFunc: schema.EnvDefaultFunc(consts.ClientCertificatePasswordEnv, ""),
+						DefaultFunc: schema.EnvDefaultFunc(ClientCertificatePasswordEnv, ""),
 					},
 					"use_msi": {
 						Type:        schema.TypeBool,
 						Optional:    true,
-						DefaultFunc: schema.EnvDefaultFunc(consts.UseMsiEnv, "false"),
+						DefaultFunc: schema.EnvDefaultFunc(UseMsiEnv, "false"),
 					},
 					"use_cli": {
 						Type:        schema.TypeBool,
 						Optional:    true,
-						DefaultFunc: schema.EnvDefaultFunc(consts.UseCliEnv, "true"),
+						DefaultFunc: schema.EnvDefaultFunc(UseCliEnv, "true"),
 					},
 				},
 			},
@@ -69,7 +66,7 @@ func configSchema() map[string]*schema.Schema {
 	}
 }
 
-func boolFromString(x string) bool {
-	x = strings.ToLower(x)
-	return x == "true" || x == "1" || x == "t" || x == "y"
-}
+// func boolFromString(x string) bool {
+// 	x = strings.ToLower(x)
+// 	return x == "true" || x == "1" || x == "t" || x == "y"
+// }

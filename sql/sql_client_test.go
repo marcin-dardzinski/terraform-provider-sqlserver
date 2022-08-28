@@ -4,12 +4,10 @@ import (
 	"database/sql"
 	"os"
 	"testing"
-
-	"github.com/marcin-dardzinski/terraform-provider-sqlserver/consts"
 )
 
 func TestAuthorizeViaSQLUser(t *testing.T) {
-	connString := tryGetEnv(consts.ConnectionStringEnv, t)
+	connString := tryGetEnv(ConnectionStringEnv, t)
 	db, err := createUsingPasswordAuth(connString)
 
 	if err != nil {
@@ -20,11 +18,11 @@ func TestAuthorizeViaSQLUser(t *testing.T) {
 }
 
 func TestAuthorizeViaClientSecret(t *testing.T) {
-	connString := tryGetEnv(consts.UserlessConnectionStringEnv, t)
+	connString := tryGetEnv(UserlessConnectionStringEnv, t)
 	azure := &AzureADConfig{
-		ClientId:     tryGetEnv(consts.ClientIdEnv, t),
-		ClientSecret: tryGetEnv(consts.ClientSecretEnv, t),
-		TenantId:     tryGetEnv(consts.TenantIdEnv, t),
+		ClientId:     tryGetEnv(ClientIdEnv, t),
+		ClientSecret: tryGetEnv(ClientSecretEnv, t),
+		TenantId:     tryGetEnv(TenantIdEnv, t),
 	}
 
 	db, err := createUsingAzureActiveDirectoryAuth(connString, azure)
@@ -37,9 +35,9 @@ func TestAuthorizeViaClientSecret(t *testing.T) {
 }
 
 func TestAuthorizeViaCli(t *testing.T) {
-	connString := tryGetEnv(consts.UserlessConnectionStringEnv, t)
+	connString := tryGetEnv(UserlessConnectionStringEnv, t)
 	azure := &AzureADConfig{
-		SubscriptionId: os.Getenv(consts.SubscriptionIdEnv),
+		SubscriptionId: os.Getenv(SubscriptionIdEnv),
 		UseCLI:         true,
 	}
 
