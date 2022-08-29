@@ -1,16 +1,16 @@
 terraform {
   required_providers {
     sqlserver = {
-      source  = "local/local/sqlserver"
-      version = "1.0.0"
+      source  = "marcin-dardzinski/sqlserver"
+      version = "0.0.1"
     }
   }
 }
 
 provider "sqlserver" {
-  connection_string = "Server=tf-2137.database.windows.net;Port=1433;Database=tf-2137;"
-  azure {
-  }
+  connection_string = "Server=localhost,1433;Database=tf-tests;Persist Security Info=False;User ID=sa;Password=Passwd1!;"
+  # azure {
+  # }
 }
 
 resource "sqlserver_user" "foo55" {
@@ -18,13 +18,13 @@ resource "sqlserver_user" "foo55" {
   password = "Passwd1!2"
 }
 
-resource "sqlserver_user" "foo" {
-  name     = "test-managed-identity"
-  # password = "Passwd1!"
-  external = true
-}
+# resource "sqlserver_user" "foo" {
+#   name = "test-managed-identity"
+#   # password = "Passwd1!"
+#   external = true
+# }
 
 resource "sqlserver_user_role" "foo" {
-  user     = "test-managed-identity"
+  user = sqlserver_user.foo55.name
   role = "db_ddladmin"
 }

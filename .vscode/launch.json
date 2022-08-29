@@ -5,12 +5,13 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Launch Package",
+      "name": "Debug Terraform Provider",
       "type": "go",
       "request": "launch",
-      "mode": "auto",
-      "program": "${fileDirname}",
-      "args": ["--debug"]
+      "mode": "debug",
+      "program": "${workspaceFolder}",
+      "env": {},
+      "args": ["-debug"]
     }
   ]
 }

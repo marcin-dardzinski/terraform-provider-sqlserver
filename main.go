@@ -17,6 +17,7 @@ func main() {
 	opts := &plugin.ServeOpts{
 		ProviderFunc: func() *schema.Provider { return internal.Provider() },
 		Debug:        debug,
+		ProviderAddr: "registry.terraform.io/marcin-dardzinski/sqlserver",
 	}
 
 	plugin.Serve(opts)
