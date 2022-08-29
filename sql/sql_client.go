@@ -62,7 +62,7 @@ func parseDatabaseId(config *msdsn.Config) string {
 }
 
 func createUsingPasswordAuth(connString string) (*sql.DB, error) {
-	return sql.Open("mssql", connString)
+	return sql.Open("sqlserver", connString)
 }
 
 func createUsingAzureActiveDirectoryAuth(connString string, azure *AzureADConfig) (*sql.DB, error) {

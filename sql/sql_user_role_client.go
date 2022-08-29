@@ -34,7 +34,7 @@ func (client *sqlUserRoleClient) Exists(role SqlUserRole) (bool, error) {
 		from sys.database_principals r
 		join sys.database_role_members m on m.role_principal_id = r.principal_id
 		join sys.database_principals u on m.member_principal_id = u.principal_id
-		where r.[name] = @rolename and r.[type] = 'R' and u.[name] = @username and u.[type] in ('C', 'E', 'K', 'S', 'U') `,
+		where r.[name] = @rolename and r.[type] = 'R' and u.[name] = @username and u.[type] in ('C', 'E', 'K', 'S', 'U')`,
 		sql.Named("username", role.User),
 		sql.Named("rolename", role.Role))
 

@@ -70,9 +70,12 @@ func (client *sqlUserClient) Create(user *SqlUser) error {
 	var cmd string
 
 	if user.ExternalLogin {
+		if user.Password != "" {
+			return fmt.Errorf("cannot create external sql user with password")
+		}
+
 		cmd = fmt.Sprintf("CREATE USER [%s] FROM EXTERNAL PROVIDER", user.Name)
 	} else {
-
 		cmd = fmt.Sprintf("CREATE USER [%s] WITH PASSWORD = '%s'\n", user.Name, user.Password)
 	}
 
