@@ -3,20 +3,21 @@ module github.com/marcin-dardzinski/terraform-provider-sqlserver
 go 1.19
 
 require (
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v0.14.0
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v0.9.2
-	github.com/denisenkom/go-mssqldb v0.10.1-0.20210728001037-ee2fbc25fd8f
+	github.com/denisenkom/go-mssqldb v0.12.2
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.21.0
 )
 
 require (
-	github.com/Azure/azure-sdk-for-go/sdk/internal v0.5.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v0.19.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v0.11.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v0.7.0 // indirect
 	github.com/agext/levenshtein v1.2.2 // indirect
 	github.com/apparentlymart/go-cidr v1.1.0 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/golang-sql/civil v0.0.0-20190719163853-cb61b32ac6fe // indirect
+	github.com/golang-sql/sqlexp v0.1.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
